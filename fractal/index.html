@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>webgl Experiments</title>
+    <script src="../utilities/sylvester.js"></script>
+    <script src="../utilities/glUtils.js"></script>
+    <script src="fractal.js"></script>
+    <script src="main.js"></script>
+    <link href="fractal.css" rel="stylesheet">
+    <script id="shader-mandel-fs" type="x-shader/x-fragment">
+      lowp float fractal(highp float x, highp float y, highp float cx, highp float cy, int it)
+{
+    return mandel(0.,0.,x,y,it);
+}
+    </script>
+    <script id="shader-julia-fs" type="x-shader/x-fragment">
+      lowp float fractal(highp float x, highp float y, highp float cx, highp float cy, int it)
+{
+    return mandel(x,y,cx,cy,it);
+}
+    </script>
+    <script id="shader-pre-fs" type="x-shader/x-fragment">
+      uniform mediump int iter;
+      uniform highp vec2 param;
+      uniform lowp vec4 colour;
+      mediump int it = 255; //int(iter);
+      //The interpolated vertex colour for this fragment
+      varying lowp vec4 vColour;
+
+      //The interpolated coordinate for this fragment
+      varying highp vec2 vCoordinate;
+
+      lowp float mandel(highp float x, highp float y, highp float cx, highp float cy, int it)
+      {
+      highp float tx;
+      highp float sqrx = x*x;
+      highp float sqry = y*y;
+      lowp int j;
+      lowp float ret;
+      for (int i = 0; i < 255; i++) { // >
+	j = i;
+	y = 2.*x*y + cy;
+	x = sqrx - sqry + cx;
+	sqrx = x*x;
+	sqry = y*y;
+	if (sqrx + sqry > 4.) { // >
+	  break;
+	  }
+	}
+	if (j == 254) {
+	ret = 0.;
+	} else {
+	j++;
+	lowp float v = pow(float(j)/float(it),.25);
+        ret = v;
+    }
+    return ret;
+}
+    </script>
+    <script id="shader-post-fs" type="x-shader/x-fragment">
+
+void main()
+{
+    lowp float col;
+    //Read colour from fractal function
+    col = fractal(vCoordinate.x,vCoordinate.y,param.x,param.y,it);
+    //col = fractal(0.,0.,0.,0.,0);
+//Set the output colour to the texture colour
+    gl_FragColor = vec4(col*colour.rgb,1.);
+}
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute vec3 aVertexPosition;
+      attribute vec4 aVertexColour;
+      attribute vec2 aVertexCoordinate;
+    
+      uniform mat4 uMVMatrix;
+      uniform mat4 uPMatrix;
+      
+      varying lowp vec4 vColour;
+      varying highp vec2 vCoordinate;
+    
+      void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vColour = aVertexColour;
+        vCoordinate = aVertexCoordinate;
+      }
+    </script>
+  </head>
+  <body onload="start()">
+    <canvas id="glCanvas" width="640" height="480">
+      Your browser doesn't appear to support the 
+      <code>&lt;canvas&gt;</code> element.
+    </canvas>
+  </body>
+</html>
