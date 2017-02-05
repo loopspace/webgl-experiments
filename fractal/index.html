@@ -2,43 +2,43 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <title>webgl Experiments</title>
+    <title>webgl Experiments: Fractals</title>
     <script src="../utilities/sylvester.js"></script>
     <script src="../utilities/glUtils.js"></script>
     <script src="fractal.js"></script>
     <script src="main.js"></script>
     <link href="fractal.css" rel="stylesheet">
     <script id="shader-mandel-fs" type="x-shader/x-fragment">
-      lowp float fractal(highp float x, highp float y, highp float cx, highp float cy, int it)
+      highp float fractal(highp float x, highp float y, highp float cx, highp float cy)
 {
-    return mandel(0.,0.,x,y,it);
+    return mandel(0.,0.,x,y);
 }
     </script>
     <script id="shader-julia-fs" type="x-shader/x-fragment">
-      lowp float fractal(highp float x, highp float y, highp float cx, highp float cy, int it)
+      highp float fractal(highp float x, highp float y, highp float cx, highp float cy)
 {
-    return mandel(x,y,cx,cy,it);
+    return mandel(x,y,cx,cy);
 }
     </script>
     <script id="shader-pre-fs" type="x-shader/x-fragment">
-      uniform mediump int iter;
       uniform highp vec2 param;
       uniform lowp vec4 colour;
-      mediump int it = 255; //int(iter);
+
+      const mediump int it = 1000;
       //The interpolated vertex colour for this fragment
       varying lowp vec4 vColour;
 
       //The interpolated coordinate for this fragment
       varying highp vec2 vCoordinate;
-
-      lowp float mandel(highp float x, highp float y, highp float cx, highp float cy, int it)
+      
+      highp float mandel(highp float x, highp float y, highp float cx, highp float cy)
       {
       highp float tx;
       highp float sqrx = x*x;
       highp float sqry = y*y;
       lowp int j;
-      lowp float ret;
-      for (int i = 0; i < 255; i++) { // >
+      highp float ret;
+      for (int i = 0; i < it; i++) { // >
 	j = i;
 	y = 2.*x*y + cy;
 	x = sqrx - sqry + cx;
@@ -48,26 +48,35 @@
 	  break;
 	  }
 	}
-	if (j == 254) {
-	ret = 0.;
+	if (j == it - 1) {
+	ret = -1.;
 	} else {
-	j++;
-	lowp float v = pow(float(j)/float(it),.25);
-        ret = v;
-    }
-    return ret;
-}
+	ret = pow(float(j)/float(it),.25);
+	}
+	return ret;
+      }
     </script>
     <script id="shader-post-fs" type="x-shader/x-fragment">
-
+      
+      lowp float estep(highp float a, highp float b, highp float c,
+      highp float t) {
+      lowp float r = step(a,t) * (1. - step(b,t)) * (t - a)/(b - a) +
+      step(b,t) * (1. - step(c,t));
+      return r;
+      }
+      
 void main()
 {
-    lowp float col;
+      highp float col;
     //Read colour from fractal function
-    col = fractal(vCoordinate.x,vCoordinate.y,param.x,param.y,it);
+    col = fractal(vCoordinate.x,vCoordinate.y,param.x,param.y);
     //col = fractal(0.,0.,0.,0.,0);
 //Set the output colour to the texture colour
-    gl_FragColor = vec4(col*colour.rgb,1.);
+//    gl_FragColor = vec4(estep(0,1./3.,2./3.,fract(col - 2./3.)),estep(0,1./3.,2./3.,col),estep(0,1./3.,2./3.,col - 1./3.),1.);
+      lowp float r = step(0.,col)*estep(0.,1./3.,2./3.,fract(col - 2./3.));
+      lowp float g = step(0.,col)*estep(0.,1./3.,2./3.,col);
+      lowp float b = step(0.,col)*estep(0.,1./3.,2./3.,col - 1./3.);
+      gl_FragColor = vec4(r,g,b,1.);
 }
     </script>
     <script id="shader-vs" type="x-shader/x-vertex">
@@ -93,5 +102,36 @@ void main()
       Your browser doesn't appear to support the 
       <code>&lt;canvas&gt;</code> element.
     </canvas>
+    <div id="info">
+      <table>
+	<tr>
+	  <th>Fractal</th>
+	  <th colspan="2">Viewport</th>
+	  <th>Centre</th>
+	</tr>
+	<tr>
+	  <td>Mandelbrot</td>
+	  <td id="mandel_ll"></td>
+	  <td id="mandel_ur"></td>
+	  <td id="mandel_ce"></td>
+	</tr>
+	<tr>
+	  <td>Julia</td>
+	  <td id="julia_ll"></td>
+	  <td id="julia_ur"></td>
+	  <td id="julia_ce"></td>
+	</tr>
+      </table>
+      <form id="showDetails">
+	<button type="button" id="showButton">Update details</button>
+      </form>
+    </div>
+    <div id="instructions">
+      <ul>
+	<li>Scroll to zoom in/out
+	<li>Click to reset zoom
+	<li>Click-drag to move
+      </ul>
+    </div>
   </body>
 </html>

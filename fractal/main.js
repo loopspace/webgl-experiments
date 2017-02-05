@@ -1,5 +1,7 @@
 var gl; // A global variable for the WebGL context
-var canvas;
+
+var width;
+var height;
 
 // Matrix stack
 var matrixStack = [];
@@ -12,6 +14,19 @@ var fractalInTouch;
 
 function start() {
     var canvas = document.getElementById('glCanvas');
+    width = window.innerWidth
+	|| document.documentElement.clientWidth
+	|| document.body.clientWidth;
+
+    height = window.innerHeight
+	|| document.documentElement.clientHeight
+	|| document.body.clientHeight;
+
+    width -= 25;
+    height -= 25;
+
+    canvas.width = width;
+    canvas.height = height;
 
     // Initialize the GL context
     gl = initWebGL(canvas);
@@ -39,6 +54,31 @@ function start() {
     canvas.addEventListener('mousedown',doMouseDown);
     canvas.addEventListener('mousemove',doMouseMove);
     canvas.addEventListener('mouseup',doMouseUp);
+
+    window.addEventListener('resize',resetSize);
+
+    var btn = document.getElementById('showButton');
+    btn.addEventListener('click',showParameters);
+    showParameters();
+}
+
+function resetSize() {
+    var canvas = document.getElementById('glCanvas');
+    width = window.innerWidth
+	|| document.documentElement.clientWidth
+	|| document.body.clientWidth;
+
+    height = window.innerHeight
+	|| document.documentElement.clientHeight
+	|| document.body.clientHeight;
+
+    width -= 25;
+    height -= 25;
+
+    canvas.width = width;
+    canvas.height = height;
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    drawScene();
 }
 
 function initWebGL(canvas) {
@@ -55,17 +95,35 @@ function initWebGL(canvas) {
     return gl;
 }
 
+function showParameters() {
+    showParametersAux(mandel);
+    showParametersAux(julia);
+}
+
+function showParametersAux(f) {
+    var vp,td;
+    vp = f.getViewport();
+    td = document.getElementById(f.name + '_ll');
+    td.innerHTML = '(' + vp[0] + ',' + vp[1] + ')';
+    td = document.getElementById(f.name + '_ur');
+    td.innerHTML = '(' + vp[2] + ',' + vp[3] + ')';
+    vp = f.getCentre();
+    td = document.getElementById(f.name + '_ce');
+    td.innerHTML = '(' + vp[0] + ',' + vp[1] + ')';
+}
 
 function drawScene() {
+    julia.setParameter(mandel.getCentre());
+    
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
-    perspectiveMatrix = makePerspective(45, 640.0/480.0, 0.1, 100.0);
-  
-    mvTranslate([-0.0, 0.0, -4.0]);
+    perspectiveMatrix = makePerspective(45, width/height, 0.1, 100.0);
 
-    julia.setParameter(mandel.getCentre());
-    
+    var z = -1/Math.tan(Math.PI/8);
+    z = Math.min(z,z*height/width*2.2);
+    mvTranslate([-0.0, 0.0, z]);
+
     pushMatrix();
     mvTranslate([-1.1, 0.0, 0.0]);
     mandel.draw();
@@ -75,7 +133,6 @@ function drawScene() {
     mvTranslate([1.1, 0.0, 0.0]);
     julia.draw();
     popMatrix();
-
 }
 
 function multMatrix(m) {

@@ -67,7 +67,6 @@ Fractal.prototype.initBuffers = function() {
     this.vertexColourAttribute = gl.getAttribLocation(this.shaderProgram, 'aVertexColour');
     this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'aVertexCoordinate');
 
-    this.iterationUniform = gl.getUniformLocation(this.shaderProgram,'iter');
     this.parameterUniform = gl.getUniformLocation(this.shaderProgram,'param');
     this.colourUniform = gl.getUniformLocation(this.shaderProgram,'colour');
 }
@@ -88,7 +87,6 @@ Fractal.prototype.doBindings = function() {
     gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
     
     gl.uniform4fv(this.colourUniform,this.colour);
-    gl.uniform1i(this.iterationUniform,10);
     gl.uniform2fv(this.parameterUniform, this.parameters);
 }
 
@@ -104,7 +102,6 @@ Fractal.prototype.enableProgram = function() {
 Fractal.prototype.draw = function(m) {
     this.enableProgram();
     this.doBindings();
-    
 
     setMatrixUniforms(this.shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -129,6 +126,10 @@ Fractal.prototype.getCentre = function() {
     var x = .5*(this.viewport[2] + this.viewport[0]);
     var y = .5*(this.viewport[3] + this.viewport[1]);
     return [x,y];
+}
+
+Fractal.prototype.getViewport = function() {
+    return this.viewport;
 }
 
 Fractal.prototype.isTouchedBy = function(e) {
@@ -270,9 +271,9 @@ function convertPoint(e,m) {
         x = event.layerX;
 	y = event.layerY;
     };
-    x *= 2/640;
+    x *= 2/width;
     x -= 1;
-    y *= 2/480;
+    y *= 2/height;
     y -= 1;
 
     // Convert to proportions along the sides of the square
