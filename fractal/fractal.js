@@ -195,6 +195,34 @@ Fractal.prototype.doMouseUp = function(e) {
     this.mouseIsMoving = false;
 }
 
+Fractal.prototype.doTouchStart = function(e) {
+    this.touchIsMoving = false;
+    this.touchpt = this.convertToViewport(e);
+}
+
+Fractal.prototype.doTouchMove = function(e) {
+    this.touchIsMoving = true;
+    
+    var pt = this.convertToViewport(e);
+    var dx = pt.x - this.touchpt.x;
+    var dy = pt.y - this.touchpt.y;
+    
+    // Adjust the viewport
+    this.viewport[0] -= dx;
+    this.viewport[1] -= dy;
+    this.viewport[2] -= dx;
+    this.viewport[3] -= dy;
+    this.setCoordinates();
+}
+
+Fractal.prototype.doTouchEnd = function(e) {
+    if (!this.touchIsMoving) {
+	this.viewport = this.defaultViewport.slice();
+	this.setCoordinates();
+    }
+    this.touchIsMoving = false;
+}
+
 // Auxiliary functions
 
 function getShader(gl, ids, type) {
@@ -267,9 +295,12 @@ function convertPoint(e,m) {
     if (e.offsetX !== undefined && e.offsetY !== undefined) {
 	x = e.offsetX;
 	y = e.offsetY;
+    } else if (e.layerX !== undefined && e.layerY !== undefined) {
+        x = e.layerX;
+	y = e.layerY;
     } else {
-        x = event.layerX;
-	y = event.layerY;
+	x = e.pageX - e.target.offsetLeft;     
+	y = e.pageY - e.target.offsetTop;
     };
     x *= 2/width;
     x -= 1;

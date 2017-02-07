@@ -55,6 +55,10 @@ function start() {
     canvas.addEventListener('mousemove',doMouseMove);
     canvas.addEventListener('mouseup',doMouseUp);
 
+    canvas.addEventListener('touchstart',doTouchStart);
+    canvas.addEventListener('touchmove',doTouchMove);
+    canvas.addEventListener('touchend',doTouchEnd);
+    
     window.addEventListener('resize',resetSize);
 
     var btn = document.getElementById('showButton');
@@ -188,6 +192,66 @@ function doMouseUp(e) {
     }
 }
 
+var ongoingTouches = [];
+
+function doTouchStart(e) {
+    e.preventDefault();
+    var update = false;
+    var touches = e.changedTouches;
+
+    for (var i = 0; i < touches.length; i++) {
+	if (mandel.isTouchedBy(touches[i])) {
+	    ongoingTouches.push([mandel,copyTouch(touches[i])]);
+	    mandel.doTouchStart(touches[i]);
+	    update = true;
+	} else if (julia.isTouchedBy(touches[i])) {
+	    ongoingTouches.push([julia,copyTouch(touches[i])]);
+	    julia.doTouchStart(touches[i]);
+	    update = true;
+	}
+    }
+    if (update) {
+	drawScene();
+    }
+}
+
+function doTouchMove(e) {
+    e.preventDefault();
+    var update = false;
+    var touches = e.changedTouches;
+
+    for (var i = 0; i < touches.length; i++) {
+	var idx = ongoingTouchIndexById(touches[i].identifier);
+	if (idx >= 0) {
+	    ongoingTouches[idx][1] = copyTouch(touches[i]);
+	    ongoingTouches[idx][0].doTouchMove(touches[i]);
+	    update = true;
+	}
+    }
+    if (update) {
+	drawScene();
+    }
+}
+
+function doTouchEnd(e) {
+    e.preventDefault();
+    var update = false;
+    var touches = e.changedTouches;
+
+    for (var i = 0; i < touches.length; i++) {
+	var idx = ongoingTouchIndexById(touches[i].identifier);
+
+	if (idx >= 0) {
+	    ongoingTouches[idx][0].doTouchEnd(touches[i]);
+	    ongoingTouches.splice(idx,1);
+	    update = true;
+	}
+    }
+    if (update) {
+	drawScene();
+    }
+}
+
 function pushMatrix() {
     var m = matrixStack[matrixStack.length - 1].dup();
     matrixStack.push(m);
@@ -208,4 +272,19 @@ function currentMatrix() {
 
 function clearMatrices() {
     matrixStack = [Matrix.I(4)];
+}
+
+function copyTouch(touch) {
+    return {id: touch.identifier, pageX: touch.pageX, pageY: touch.pageY, target: touch.target}
+}
+
+function ongoingTouchIndexById(idToFind) {
+  for (var i = 0; i < ongoingTouches.length; i++) {
+    var id = ongoingTouches[i][1].id;
+    
+    if (id == idToFind) {
+      return i;
+    }
+  }
+  return -1;    // not found
 }
