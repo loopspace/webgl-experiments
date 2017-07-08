@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>webgl Experiments: Images</title>
+    <script src="../utilities/sylvester.js"></script>
+    <script src="../utilities/glUtils.js"></script>
+    <script src="image.js"></script>
+    <script src="main.js"></script>
+    <link href="style.css" rel="stylesheet">
+    <script id="shader-pre-fs" type="x-shader/x-fragment">
+      uniform lowp float DeltaTime;
+      uniform sampler2D texture;
+
+      //The interpolated vertex colour for this fragment
+      varying lowp vec4 vColour;
+
+      //The interpolated coordinate for this fragment
+      varying lowp vec2 vTexcoord;
+      
+void main()
+      {
+    </script>
+    <script id="shader-post-fs" type="x-shader/x-fragment">
+}
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute vec3 vertexPosition;
+      attribute vec4 vertexColour;
+      attribute vec2 textureCoordinate;
+    
+      uniform mat4 uMVMatrix;
+      uniform mat4 uPMatrix;
+      
+      varying lowp vec4 vColour;
+      varying lowp vec2 vTexcoord;
+    
+      void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(vertexPosition, 1.0);
+        vColour = vertexColour;
+        vTexcoord = textureCoordinate;
+      }
+    </script>
+  </head>
+  <body onload="start()">
+    <img src="dragonfly.jpg" id="defaultImage" class="hidden">
+    <div id="shader">
+      <form id="shaderForm">
+	<textarea id="shaderText">lowp vec4 c = texture2D(texture, vTexcoord);
+	  c *= vColour;
+	  // Your code in here
+
+	  gl_FragColor = c;
+	  
+	</textarea>
+	<button id="redraw" type="button">Redraw</button>
+	<button id="reset" type="button">Reset</button>
+      </form>
+    </div>
+    <div id="container">
+      <canvas id="glCanvas" width="640" height="480">
+	Your browser doesn't appear to support the 
+	<code>&lt;canvas&gt;</code> element.
+      </canvas>
+    </div>
+  </body>
+</html>
