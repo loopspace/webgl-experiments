@@ -2,6 +2,7 @@ var gl; // A global variable for the WebGL context
 
 var width;
 var height;
+var aspect;
 
 // Matrix stack
 var matrixStack = [];
@@ -24,6 +25,8 @@ function start() {
 
     width -= 25;
     height -= 25;
+
+    aspect = Math.min(width/4,height/2) - 25;
 
     canvas.width = width;
     canvas.height = height;
@@ -79,6 +82,8 @@ function resetSize() {
     width -= 25;
     height -= 25;
 
+    aspect = Math.min(width/4,height/2) - 25;
+
     canvas.width = width;
     canvas.height = height;
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
@@ -122,19 +127,18 @@ function drawScene() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
-    perspectiveMatrix = makePerspective(45, width/height, 0.1, 100.0);
-
-    var z = -1/Math.tan(Math.PI/8);
-    z = Math.min(z,z*height/width*2.2);
-    mvTranslate([-0.0, 0.0, z]);
+    //    perspectiveMatrix = makePerspective(45, width/height, 0.1, 100.0);
+    perspectiveMatrix = makeOrtho(0,width,0,height,-1,100);
 
     pushMatrix();
-    mvTranslate([-1.1, 0.0, 0.0]);
+    mvTranslate([width/4,height/2,0]);
+    mvScale([aspect,aspect,1]);
     mandel.draw();
     popMatrix();
 
     pushMatrix();
-    mvTranslate([1.1, 0.0, 0.0]);
+    mvTranslate([3*width/4,height/2, 0.0]);
+    mvScale([aspect,aspect,1]);
     julia.draw();
     popMatrix();
 }
@@ -145,6 +149,10 @@ function multMatrix(m) {
 
 function mvTranslate(v) {
     multMatrix(Matrix.Translation($V([v[0], v[1], v[2]])).ensure4x4());
+}
+
+function mvScale(v) {
+    multMatrix(Matrix.Scale($V([v[0], v[1], v[2]])).ensure4x4());
 }
 
 function setMatrixUniforms(s) {
