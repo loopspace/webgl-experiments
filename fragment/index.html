@@ -43,18 +43,58 @@ void main()
     </script>
   </head>
   <body onload="start()">
-    <img src="dragonfly.jpg" id="defaultImage" class="hidden">
+    <div id="images" class="hidden"></div>
     <div id="shader">
       <form id="shaderForm">
 	<textarea id="shaderText">lowp vec4 c = texture2D(texture, vTexcoord);
-	  c *= vColour;
-	  // Your code in here
+c *= vColour;
+// Your code in here
 
-	  gl_FragColor = c;
-	  
+gl_FragColor = c;
 	</textarea>
-	<button id="redraw" type="button">Redraw</button>
+	<button id="reload" type="button">Reload</button>
 	<button id="reset" type="button">Reset</button>
+	<br>
+	<table>
+	  <tr>
+	    <th>Texture</th><th>Image</th>
+	  </tr>
+	  <tr>
+	    <td><code>texture</code></td><td>
+	      <select id="texture">
+		<option value="0">Domkirke (winter)</option>
+		<option value="1">Nidelva (winter)</option>
+		<option value="2">Matlock Bridge</option>
+		<option value="3">Matlock River</option>
+		<option value="4">Connisborough Viaduct</option>
+		<option value="5">Connisborough Castle</option>
+		<option value="6">Roche Abbey</option>
+		<option value="7">Trondheim Warehouses</option>
+		<option value="8">Bymarka</option>
+		<option value="9">Domkirke (summer)</option>
+		<option value="10">Trondheim Railway Bridge</option>
+		<option value="11">Ilen Kirke</option>
+		<option value="12">Nidelva (autumn)</option>
+		<option value="13">Beetle Drive</option>
+		<option value="14">Universitet</option>
+		<option value="15">Butterfly</option>
+		<option value="16">Green Dragonfly</option>
+		<option value="17">Blue Dragonfly</option>
+	      </select>
+	    </td>
+	  </tr>
+	</table>
+	<h4>Corner Colours</h4>
+	<table>
+	  <tr>
+	    <td><input type="color" id="ul" value="#ff0000"></td>
+	    <td><input type="color" id="ur" value="#0000ff"></td>
+	  </tr>
+	  <tr>
+	    <td><input type="color" id="bl" value="#00ff00"></td>
+	    <td><input type="color" id="br" value="#ffffff"></td>
+	  </tr>
+	</table>
       </form>
     </div>
     <div id="container">

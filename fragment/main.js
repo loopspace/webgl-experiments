@@ -3,6 +3,8 @@ var gl; // A global variable for the WebGL context
 var width;
 var height;
 var aspect;
+var start;
+var ready;
 
 // Matrix stack
 var matrixStack = [];
@@ -10,8 +12,33 @@ var matrixStack = [];
 // Perspective matrix
 var perspectiveMatrix;
 
-// Current touched object
-var fractalInTouch;
+// Images
+var imagesrcs = [
+	"100_3780.jpg",
+	"100_3781.jpg",
+	"100_4087.jpg",
+	"100_4100.jpg",
+	"100_4116.jpg",
+	"100_4127.jpg",
+	"100_4201.jpg",
+	"AutumnColours_96_1.jpg",
+	"Bymarka_89.jpg",
+	"NorwayAugust_117_1.jpg",
+	"NorwayAugust_39_1.jpg",
+	"NorwayOct_1.jpg",
+	"NorwayOct_10_1.jpg",
+	"NorwayOct_3_1.jpg",
+	"NorwayOct_6_1.jpg",
+	"P7255075.JPG",
+	"P7255088.JPG",
+	"P7255097.JPG"
+];
+
+var textures = [
+    'texture'
+];
+
+var images = [];
 
 function start() {
     var canvas = document.getElementById('glCanvas');
@@ -49,9 +76,8 @@ function start() {
     // Clear the color as well as the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    img = new Image('shaderText','defaultImage',[1.0,0.0,0.0,1.0]);
+    img = new Image('shaderText',[1.0,0.0,0.0,1.0]);
 
-    drawScene();
     canvas.addEventListener('wheel',doWheel);
     canvas.addEventListener('mousedown',doMouseDown);
     canvas.addEventListener('mousemove',doMouseMove);
@@ -61,12 +87,47 @@ function start() {
     canvas.addEventListener('touchmove',doTouchMove);
     canvas.addEventListener('touchend',doTouchEnd);
     
-    window.addEventListener('resize',resetSize);
-
-    var btn = document.getElementById('redraw');
-    btn.addEventListener('click',drawScene);
+    var btn = document.getElementById('reload');
+    btn.addEventListener('click',loadShader);
     btn = document.getElementById('reset');
     btn.addEventListener('click',resetShaderText);
+
+    var cols = ['ul','ur','bl','br'];
+    var col;
+    for (var i = 0; i < 4; i++) {
+	col = document.getElementById(cols[i]);
+	col.addEventListener('change',setColours);
+    }
+
+    var sel;
+    for (var i = 0; i < textures.length; i++) {
+	sel = document.getElementById(textures[i]);
+	sel.addEventListener('change',setTextures);
+    }
+
+    var loaded = 0;
+    var imgdiv = document.getElementById('images');
+    for (var i = 0; i < imagesrcs.length; i++) {
+	images[i] = document.createElement('img');
+	images[i].src = "./Images/" + imagesrcs[i];
+	imgdiv.appendChild(images[i]);
+	images[i].addEventListener('load',function() {
+	    loaded++;
+	    if (loaded == imagesrcs.length - 1) {
+		initialise();
+	    }
+	});
+    }
+}
+
+function initialise() {
+    setTextures();
+    setColours();
+    resetSize();
+    img.initialise();
+    window.addEventListener('resize',resetSize);
+    ready = true;
+    drawScene();
 }
 
 function resetSize() {
@@ -112,8 +173,38 @@ function initWebGL(canvas) {
     return gl;
 }
 
+function setColours() {
+    var cols = ['ur','ul','br','bl'];
+    var ncols = [];
+    var col,b,g,r;
+    for (var i = 0; i < 4; i++) {
+	col = document.getElementById(cols[i]).value;
+	b = parseInt(col.substr(5,2),16)/255;
+        g = parseInt(col.substr(3,2),16)/255;
+        r = parseInt(col.substr(1,2),16)/255;
+	ncols.push([r,g,b,1]);
+    }
+    img.setColours(ncols);
+    drawScene();
+}
 
-function drawScene() {
+function setTextures() {
+    var sel;
+    for (var i = 0; i < textures.length; i++) {
+	sel = document.getElementById(textures[i]);
+	img.setTexture(textures[i],images[sel.value]);
+    }
+    drawScene();
+}
+
+function loadShader() {
+    img.reloadShader();
+    drawScene();
+}
+
+function drawScene(timestamp) {
+    if (!ready) {return};
+    var dt = timestamp - start;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
@@ -123,8 +214,9 @@ function drawScene() {
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
     mvScale([aspect,aspect,1]);
-    img.draw();
+    img.draw(dt);
     popMatrix();
+//    window.requestAnimationFrame(drawScene);
 }
 
 function multMatrix(m) {
@@ -150,10 +242,10 @@ function setMatrixUniforms(s) {
 function doWheel(e) {
     if (mandel.isTouchedBy(e)) {
 	mandel.doWheel(e);
-	drawScene();
+//	drawScene();
     } else if (julia.isTouchedBy(e)) {
 	julia.doWheel(e);
-	drawScene();
+//	drawScene();
     }
 }
 
@@ -162,25 +254,25 @@ function doMouseDown(e) {
     if (mandel.isTouchedBy(e)) {
 	mandel.doMouseDown(e);
 	fractalInTouch = mandel;
-	drawScene();
+//	drawScene();
     } else if (julia.isTouchedBy(e)) {
 	julia.doMouseDown(e);
 	fractalInTouch = julia;
-	drawScene();
+//	drawScene();
     }
 }
 
 function doMouseMove(e) {
     if (fractalInTouch) {
 	fractalInTouch.doMouseMove(e);
-	drawScene();
+//	drawScene();
     }
 }
 
 function doMouseUp(e) {
     if (fractalInTouch) {
 	fractalInTouch.doMouseUp(e);
-	drawScene();
+//	drawScene();
     }
 }
 
@@ -203,7 +295,7 @@ function doTouchStart(e) {
 	}
     }
     if (update) {
-	drawScene();
+//	drawScene();
     }
 }
 
@@ -221,7 +313,7 @@ function doTouchMove(e) {
 	}
     }
     if (update) {
-	drawScene();
+//	drawScene();
     }
 }
 
@@ -240,7 +332,7 @@ function doTouchEnd(e) {
 	}
     }
     if (update) {
-	drawScene();
+//	drawScene();
     }
 }
 

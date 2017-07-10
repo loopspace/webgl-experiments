@@ -1,10 +1,18 @@
 
 // Image class
-function Image(s,i,c) {
+function Image(s,c) {
     this.source = s;
-    this.imageId = i;
     this.colour = new Float32Array(c);
+    this.textures = {};
+    this.setColours([
+	[1.,1.,1.,1.],
+	[1.,1.,1.,1.],
+	[1.,1.,1.,1.],
+	[1.,1.,1.,1.]
+    ]);
+}
 
+Image.prototype.initialise = function() {
     this.initShaders();
     this.initBuffers();
 }
@@ -53,18 +61,11 @@ Image.prototype.initBuffers = function() {
 	-w, -h, 0.0  // bottom left on screen
     ]);
 
-    this.colours = new Float32Array ([
-	1.0,  1.0,  1.0,  1.0,    // white
-	1.0,  0.0,  0.0,  1.0,    // red
-	0.0,  1.0,  0.0,  1.0,    // green
-	0.0,  0.0,  1.0,  1.0     // blue
-    ]);
-
     this.coordinates = new Float32Array ([
-	1.0, 1.0,
-	0.0, 1.0,
 	1.0, 0.0,
-	0.0, 0.0
+	0.0, 0.0,
+	1.0, 1.0,
+	0.0, 1.0
     ]);
     
     gl.useProgram(this.shaderProgram);
@@ -81,9 +82,9 @@ Image.prototype.initBuffers = function() {
 }
 
 Image.prototype.getImage = function() {
-    this.image = document.getElementById(this.imageId);
-    var w = this.image.width;
-    var h = this.image.height;
+    var img = this.textures['texture'];
+    var w = img.width;
+    var h = img.height;
     this.halfwidth = w/Math.max(w,h);
     this.halfheight = h/Math.max(w,h);
 }
@@ -97,14 +98,14 @@ Image.prototype.doBindings = function() {
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesColourBuffer);
     gl.vertexAttribPointer(this.vertexColourAttribute, 4, gl.FLOAT, false, 0, 0);
-    gl.bufferData(gl.ARRAY_BUFFER, this.colours, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, this.colours, gl.DYNAMIC_DRAW);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesCoordinateBuffer);
     gl.vertexAttribPointer(this.vertexCoordinateAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
 
     gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures['texture']);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -130,10 +131,12 @@ Image.prototype.enableProgram = function() {
     
 }
 
-Image.prototype.draw = function(m) {
+Image.prototype.reloadShader = function() {
     this.initShaders();
     this.initBuffers();
+}
 
+Image.prototype.draw = function(m) {
     this.enableProgram();
     this.doBindings();
 
@@ -142,6 +145,21 @@ Image.prototype.draw = function(m) {
 
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
 }
+
+Image.prototype.setColours = function(c) {
+    var nc = [];
+    for (var i = 0; i < c.length; i++) {
+	for (var j = 0; j < c[i].length; j++) {
+	    nc.push(c[i][j]);
+	}
+    }
+    this.colours = new Float32Array (nc);
+}
+
+Image.prototype.setTexture = function(t,i) {
+    this.textures[t] = i;
+}
+
 
 Image.prototype.setCoordinates = function() {
     this.coordinates = new Float32Array([
