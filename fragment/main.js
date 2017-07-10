@@ -240,6 +240,7 @@ function setMatrixUniforms(s) {
 }
 
 function doWheel(e) {
+    /*
     if (mandel.isTouchedBy(e)) {
 	mandel.doWheel(e);
 //	drawScene();
@@ -247,9 +248,11 @@ function doWheel(e) {
 	julia.doWheel(e);
 //	drawScene();
     }
+*/
 }
 
 function doMouseDown(e) {
+    /*
     fractalInTouch = null;
     if (mandel.isTouchedBy(e)) {
 	mandel.doMouseDown(e);
@@ -260,26 +263,31 @@ function doMouseDown(e) {
 	fractalInTouch = julia;
 //	drawScene();
     }
+*/
 }
 
 function doMouseMove(e) {
-    if (fractalInTouch) {
+/*    if (fractalInTouch) {
 	fractalInTouch.doMouseMove(e);
 //	drawScene();
     }
+*/
 }
 
 function doMouseUp(e) {
+    /*
     if (fractalInTouch) {
 	fractalInTouch.doMouseUp(e);
 //	drawScene();
     }
+*/
 }
 
 var ongoingTouches = [];
 
 function doTouchStart(e) {
     e.preventDefault();
+    /*
     var update = false;
     var touches = e.changedTouches;
 
@@ -297,10 +305,12 @@ function doTouchStart(e) {
     if (update) {
 //	drawScene();
     }
+*/
 }
 
 function doTouchMove(e) {
     e.preventDefault();
+    /*
     var update = false;
     var touches = e.changedTouches;
 
@@ -315,10 +325,12 @@ function doTouchMove(e) {
     if (update) {
 //	drawScene();
     }
+*/
 }
 
 function doTouchEnd(e) {
     e.preventDefault();
+    /*
     var update = false;
     var touches = e.changedTouches;
 
@@ -334,6 +346,7 @@ function doTouchEnd(e) {
     if (update) {
 //	drawScene();
     }
+*/
 }
 
 function pushMatrix() {
