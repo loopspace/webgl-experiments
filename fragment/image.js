@@ -3,7 +3,7 @@
 function Image(s,c) {
     this.source = s;
     this.colour = new Float32Array(c);
-    this.textures = {};
+    this.textures = [];
     this.setColours([
 	[1.,1.,1.,1.],
 	[1.,1.,1.,1.],
@@ -18,7 +18,7 @@ Image.prototype.initialise = function() {
 }
 
 Image.prototype.initShaders = function() {
-    var fragmentShader = getShader(gl,[ 'shader-pre-fs',this.source, 'shader-post-fs']);
+    var fragmentShader = getShader(gl,[this.getTextures(), 'shader-pre-fs',this.source, 'shader-post-fs']);
     var vertexShader = getShader(gl, 'shader-vs');
   
     // Create the shader program
@@ -73,7 +73,11 @@ Image.prototype.initBuffers = function() {
     this.squareVerticesBuffer = gl.createBuffer();
     this.squareVerticesColourBuffer = gl.createBuffer();    
     this.squareVerticesCoordinateBuffer = gl.createBuffer();
-    this.texture = gl.createTexture();
+
+    for (var i = 0; i < this.textures.length; i++) {
+	this.textures[i].texture = gl.createTexture();
+    }
+//    this.texture = gl.createTexture();
 
     this.vertexColourAttribute = gl.getAttribLocation(this.shaderProgram, 'vertexColour');
     this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'textureCoordinate');
@@ -82,11 +86,19 @@ Image.prototype.initBuffers = function() {
 }
 
 Image.prototype.getImage = function() {
-    var img = this.textures['texture'];
+    var img = this.textures[0].image;
     var w = img.width;
     var h = img.height;
     this.halfwidth = w/Math.max(w,h);
     this.halfheight = h/Math.max(w,h);
+}
+
+Image.prototype.getTextures = function() {
+    var str = "";
+    for (var i = 0; i < this.textures.length; i++) {
+	str += "uniform sampler2D " + this.textures[i].name + ";\n";
+    }
+    return str;
 }
 
 Image.prototype.doBindings = function() {
@@ -104,8 +116,18 @@ Image.prototype.doBindings = function() {
     gl.vertexAttribPointer(this.vertexCoordinateAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
 
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures['texture']);
+    for (var i = 0; i < this.textures.length; i++) {
+	this.bindTexture(i);
+    }
+    
+    gl.uniform4fv(this.colourUniform,this.colour);
+
+}
+
+Image.prototype.bindTexture = function(i) {
+    gl.activeTexture(gl.TEXTURE0 + i);
+    gl.bindTexture(gl.TEXTURE_2D, this.textures[i].texture);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures[i].image);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -113,13 +135,9 @@ Image.prototype.doBindings = function() {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     // Prevents t-coordinate wrapping (repeating).
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.bindTexture(gl.TEXTURE_2D, null);
+    gl.uniform1i(gl.getUniformLocation(this.shaderProgram, this.textures[i].name), i);
+//    gl.bindTexture(gl.TEXTURE_2D, null);
     
-    gl.uniform4fv(this.colourUniform,this.colour);
-
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'texture'), 0);    
 }
 
 Image.prototype.enableProgram = function() {
@@ -156,8 +174,13 @@ Image.prototype.setColours = function(c) {
     this.colours = new Float32Array (nc);
 }
 
-Image.prototype.setTexture = function(t,i) {
-    this.textures[t] = i;
+Image.prototype.setTexture = function(i,t,img) {
+    if (!this.textures[i]) {
+	this.textures[i] = {};
+    }
+    this.textures[i].image = img;
+    this.textures[i].name = t;
+//    this.textures[i].location = gl["TEXTURE" + i];
 }
 
 
@@ -289,15 +312,16 @@ function getShader(gl, ids, type) {
 	shaderScript = document.getElementById(ids[i]);
   
 	if (!shaderScript) {
-	    return null;
-	}
-	if (shaderScript.nodeName == 'TEXTAREA') {
-	    theSource += shaderScript.value;
+	    theSource += ids[i];
 	} else {
-	    theSource += shaderScript.text;
+	    if (shaderScript.nodeName == 'TEXTAREA') {
+		theSource += shaderScript.value;
+	    } else {
+		theSource += shaderScript.text;
+	    }
 	}
     }
-
+//    console.log(theSource);
     if (!type) {
 	if (shaderScript.type == 'x-shader/x-fragment') {
 	    type = gl.FRAGMENT_SHADER;

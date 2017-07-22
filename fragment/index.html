@@ -9,8 +9,7 @@
     <script src="main.js"></script>
     <link href="style.css" rel="stylesheet">
     <script id="shader-pre-fs" type="x-shader/x-fragment">
-      uniform lowp float DeltaTime;
-      uniform sampler2D texture;
+      //uniform lowp float DeltaTime;
 
       //The interpolated vertex colour for this fragment
       varying lowp vec4 vColour;
@@ -55,7 +54,7 @@ gl_FragColor = c;
 	<button id="reload" type="button">Reload</button>
 	<button id="reset" type="button">Reset</button>
 	<br>
-	<table>
+	<table id='textable'>
 	  <tr>
 	    <th>Texture</th><th>Image</th>
 	  </tr>
@@ -84,6 +83,11 @@ gl_FragColor = c;
 	    </td>
 	  </tr>
 	</table>
+	<ul>
+	  <li><button type="button" id="addtex" name="addtex">Add texture</button>
+	  <li>Add image <input type="file" id="imgload"
+			       name="addImage" />
+	</ul>
 	<h4>Corner Colours</h4>
 	<table>
 	  <tr>

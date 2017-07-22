@@ -88,21 +88,28 @@ function start() {
     canvas.addEventListener('touchend',doTouchEnd);
     
     var btn = document.getElementById('reload');
-    btn.addEventListener('click',loadShader);
+    btn.addEventListener('click',function() { loadShader(); drawScene(); });
     btn = document.getElementById('reset');
-    btn.addEventListener('click',resetShaderText);
+    btn.addEventListener('click',function() {resetShaderText(); drawScene(); });
 
+    btn = document.getElementById('imgload');
+    btn.addEventListener('change',addImage);
+    btn.value = "";
+
+    btn = document.getElementById('addtex');
+    btn.addEventListener('click',addTexture);
+    
     var cols = ['ul','ur','bl','br'];
     var col;
     for (var i = 0; i < 4; i++) {
 	col = document.getElementById(cols[i]);
-	col.addEventListener('change',setColours);
+	col.addEventListener('change',function() {setColours(); drawScene();});
     }
 
     var sel;
     for (var i = 0; i < textures.length; i++) {
 	sel = document.getElementById(textures[i]);
-	sel.addEventListener('change',setTextures);
+	sel.addEventListener('change',function() {setTextures(); drawScene();});
     }
 
     var loaded = 0;
@@ -125,7 +132,7 @@ function initialise() {
     setColours();
     resetSize();
     img.initialise();
-    window.addEventListener('resize',resetSize);
+    window.addEventListener('resize',function() {resetSize(); drawScene();});
     ready = true;
     drawScene();
 }
@@ -150,13 +157,11 @@ function resetSize() {
     canvas.width = width;
     canvas.height = height;
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-    drawScene();
 }
 
 function resetShaderText() {
     var txt = document.getElementById('shaderText');
     txt.value = "lowp vec4 c = texture2D(texture, vTexcoord);\nc *= vColour;\n// Your code in here\ngl_FragColor = c;"
-    drawScene();
 }
 
 function initWebGL(canvas) {
@@ -185,21 +190,18 @@ function setColours() {
 	ncols.push([r,g,b,1]);
     }
     img.setColours(ncols);
-    drawScene();
 }
 
 function setTextures() {
     var sel;
     for (var i = 0; i < textures.length; i++) {
 	sel = document.getElementById(textures[i]);
-	img.setTexture(textures[i],images[sel.value]);
+	img.setTexture(i,textures[i],images[sel.value]);
     }
-    drawScene();
 }
 
 function loadShader() {
     img.reloadShader();
-    drawScene();
 }
 
 function drawScene(timestamp) {
@@ -217,6 +219,51 @@ function drawScene(timestamp) {
     img.draw(dt);
     popMatrix();
 //    window.requestAnimationFrame(drawScene);
+}
+
+function addImage() {
+    var file = document.getElementById("imgload").files[0];
+    var reader = new FileReader();
+    reader.onloadend = function(){
+	var imgdiv = document.getElementById('images');
+	var ilen = images.length;
+	images[ilen] = document.createElement('img');
+	images[ilen].src = reader.result;
+	imgdiv.appendChild(images[ilen]);
+	var sel = document.getElementById('texture');
+	var opt = document.createElement('option');
+	opt.text = file.name;
+	opt.value = sel.length;
+	sel.appendChild(opt);
+    }
+
+    if (file){
+	reader.readAsDataURL(file);
+    }else{
+    } 
+}
+
+function addTexture() {
+    var tlen = textures.length;
+    var tbl = document.getElementById('textable');
+    var tr = document.createElement('tr');
+    var td = document.createElement('td');
+    var cd = document.createElement('code');
+    var tx = document.createTextNode('texture' + tlen);
+    cd.appendChild(tx);
+    td.appendChild(cd);
+    tr.appendChild(td);
+    var sel = document.getElementById('texture');
+    var selcl = sel.cloneNode(true);
+    selcl.addEventListener('change',setTextures);
+    selcl.id = 'texture' + tlen;
+    textures.push('texture' + tlen);
+    td = document.createElement('td');
+    td.appendChild(selcl);
+    tr.appendChild(td);
+    tbl.appendChild(tr);
+    setTextures();
+    loadShader();
 }
 
 function multMatrix(m) {
