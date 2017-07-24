@@ -4,7 +4,6 @@ var width;
 var height;
 var aspect;
 var start;
-var ready;
 
 // Matrix stack
 var matrixStack = [];
@@ -66,6 +65,23 @@ function start() {
 	return;
     }
 
+    var shtxt = localStorage.getItem('shader');
+    if (shtxt) {
+	var shader = document.getElementById('shaderText');
+	shader.value = shtxt;
+    } else {
+	resetShaderText();
+    }
+    var tlen = localStorage.getItem('textures');
+    if (tlen) {
+	tlen = parseInt(tlen,10);
+	if (tlen > 1) {
+	    for (var i = 1; i < tlen; i++) {
+		addTexture();
+	    }
+	}
+    }
+
 
     // Set clear color to black, fully opaque
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
@@ -77,6 +93,7 @@ function start() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     img = new Image('shaderText',[1.0,0.0,0.0,1.0]);
+    img.setError(doError);
 
     canvas.addEventListener('wheel',doWheel);
     canvas.addEventListener('mousedown',doMouseDown);
@@ -97,7 +114,7 @@ function start() {
     btn.value = "";
 
     btn = document.getElementById('addtex');
-    btn.addEventListener('click',addTexture);
+    btn.addEventListener('click',function() {addTexture(); setTextures(); loadShader(); });
     
     var cols = ['ul','ur','bl','br'];
     var col;
@@ -133,7 +150,6 @@ function initialise() {
     resetSize();
     img.initialise();
     window.addEventListener('resize',function() {resetSize(); drawScene();});
-    ready = true;
     drawScene();
 }
 
@@ -201,12 +217,14 @@ function setTextures() {
 }
 
 function loadShader() {
+    clearError();
+    var shader = document.getElementById('shaderText');
+    localStorage.setItem('shader',shader.value);
+    localStorage.setItem('textures',textures.length);
     img.reloadShader();
 }
 
 function drawScene(timestamp) {
-    if (!ready) {return};
-    var dt = timestamp - start;
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
@@ -216,7 +234,7 @@ function drawScene(timestamp) {
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
     mvScale([aspect,aspect,1]);
-    img.draw(dt);
+    img.draw();
     popMatrix();
 //    window.requestAnimationFrame(drawScene);
 }
@@ -262,8 +280,22 @@ function addTexture() {
     td.appendChild(selcl);
     tr.appendChild(td);
     tbl.appendChild(tr);
-    setTextures();
-    loadShader();
+}
+
+function doError(e) {
+    var err = document.getElementById('error');
+    err.innerHTML = '';
+    err.style.display = 'block';
+    var txt = document.createTextNode(e);
+    var cd = document.createElement('code');
+    cd.appendChild(txt);
+    err.appendChild(cd);
+}
+
+function clearError() {
+    var err = document.getElementById('error');
+    err.style.display = 'none';
+    err.innerHTML = '';
 }
 
 function multMatrix(m) {

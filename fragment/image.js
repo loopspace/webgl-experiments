@@ -1,6 +1,9 @@
+var errorfn;
+
 
 // Image class
 function Image(s,c) {
+    this.valid = true;
     this.source = s;
     this.colour = new Float32Array(c);
     this.textures = [];
@@ -12,14 +15,26 @@ function Image(s,c) {
     ]);
 }
 
+Image.prototype.setError = function(fn) {
+    errorfn = fn;
+}
+
 Image.prototype.initialise = function() {
+    this.valid = true;
     this.initShaders();
     this.initBuffers();
 }
 
 Image.prototype.initShaders = function() {
+    if (!this.valid) {
+	return null;
+    }
     var fragmentShader = getShader(gl,[this.getTextures(), 'shader-pre-fs',this.source, 'shader-post-fs']);
     var vertexShader = getShader(gl, 'shader-vs');
+    if (!fragmentShader || !vertexShader) {
+	this.valid = false;
+	return null;
+    }
   
     // Create the shader program
   
@@ -31,7 +46,8 @@ Image.prototype.initShaders = function() {
     // If creating the shader program failed, alert
   
     if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-	console.log('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+	this.valid = false;
+	errorfn('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
     }
   
     gl.useProgram(shaderProgram);
@@ -49,6 +65,9 @@ Image.prototype.initShaders = function() {
 }
 
 Image.prototype.initBuffers = function() {
+    if (!this.valid) {
+	return null;
+    }
     this.getImage();
 
     var w = this.halfwidth;
@@ -102,6 +121,9 @@ Image.prototype.getTextures = function() {
 }
 
 Image.prototype.doBindings = function() {
+    if (!this.valid) {
+	return null;
+    }
     
     gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesBuffer);
     gl.vertexAttribPointer(this.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
@@ -150,6 +172,7 @@ Image.prototype.enableProgram = function() {
 }
 
 Image.prototype.reloadShader = function() {
+    this.valid = true;
     this.initShaders();
     this.initBuffers();
 }
@@ -157,7 +180,9 @@ Image.prototype.reloadShader = function() {
 Image.prototype.draw = function(m) {
     this.enableProgram();
     this.doBindings();
-
+    if (!this.valid) {
+	return null;
+    }
     setMatrixUniforms(this.shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
@@ -339,10 +364,10 @@ function getShader(gl, ids, type) {
     gl.compileShader(shader);  
     
     // See if it compiled successfully
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
-	console.log('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));  
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+	errorfn('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));  
 	gl.deleteShader(shader);
-	return null;  
+	return null;
     }
     
     return shader;
