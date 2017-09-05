@@ -1,0 +1,46 @@
+/*
+@media (orientation: portrait) {
+    body {
+	-webkit-text-size-adjust: 300%;
+    }
+}
+
+@media (orientation: landscape) {
+    body {
+	-webkit-text-size-adjust: 200%;
+    }
+}
+*/
+#content {
+    clear: both;
+    padding: 0ex 2ex;
+    -webkit-overflow-scrolling: touch;
+    background-color: #eee; 
+    border: 2px solid;
+    border-radius: 2ex;
+}
+
+#toc {
+    clear: both;
+}
+
+#titlepage {
+    float: right;
+}
+
+#title {
+    font-weight: bold;
+}
+
+#title p {
+    font-family: "Lucida Sans Unicode";
+}
+
+ol,ul {
+    padding-left: 1em;
+    margin-left: 0px;
+}
+
+ol ul, ul ol {
+    padding-left: .5em;
+}

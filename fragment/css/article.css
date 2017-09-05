@@ -1,0 +1,161 @@
+
+#title p {
+  font-size: 1.5em;
+}
+
+body {
+    font-family: 'Raleway', "Lucida Sans Unicode", sans-serif;
+
+}
+
+html {
+    background-color: #AAAAAA;
+}
+
+#author, #date, #licence {
+    display: inline;
+    font-size: small;
+}
+#author:before {
+    content: "©";
+}
+
+#titlepage p {
+    display: inline;
+}
+
+pre code {
+    background: #eee;
+}
+
+#licence a {
+    padding: 1ex;
+}
+
+div.table table {
+    margin-left: auto;
+    margin-right: auto;
+    border-collapse: collapse;
+}
+
+td {
+    padding: 1pt 1ex;
+}
+
+div.table tr:first-child {
+    border-bottom: solid thin;
+}
+
+div.table tr:last-child {
+    border-bottom: solid thin;
+}
+
+.gentheorem .title {
+    font-weight: bold;
+    margin-left: -1.5ex;
+}
+.gentheorem {
+    padding: 0ex 0ex 0ex 3ex;
+    background: #f9f9f9;
+    border-radius: 1ex;
+}
+.gentheorem table.displaymaths {
+    background: #f9f9f9;
+}
+
+img.includegraphics {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+  max-width: 80%;
+  border-radius: 15px;
+}
+
+#toc ol {
+    padding-left: 0;
+    list-style-type: none;
+}
+#toc ol ol {
+    padding-left: 10pt;
+}
+
+.marginpar div {
+    border: thin solid;
+    border-radius: 1ex;
+    padding: 0 1ex;
+    background: #eee;
+}
+
+.marginpar {
+    float: right;
+    clear: both;
+    overflow: visible;
+    width: 19ex;
+    padding: 0 2ex 0 2ex;
+    font-size: small;
+}
+
+.marginpar_src, .marginpar_tgt, .footnote_src, .footnote_tgt {
+    font-size: small;
+    vertical-align: super;
+}
+
+div.center {
+    text-align: center;
+}
+
+.caption {
+    text-align: center;
+}
+
+.Huge {
+    font-size: 250%
+}
+
+.huge {
+    font-size: 200%
+}
+
+.LARGE {
+    font-size: 180%
+}
+
+.Large {
+    font-size: 140%
+}
+
+.large {
+    font-size: 120%
+}
+
+.tiny {
+    font-size: 50%
+}
+
+.scriptsize {
+    font-size: 70%
+}
+
+table.displaymaths {
+    background-color: #eee;
+}
+
+ol.bibliography {
+    list-style: none outside none;
+}
+
+ol.bibliography span.listlabel {
+    float: left;
+    text-align: right;
+}
+
+.colorbox {
+    border: 1px solid;
+    border-radius: 5px;
+    background: #fafafa;
+    padding: 0px 5px;
+}
+
+.colorbox code {
+    background: #fafafa;
+}

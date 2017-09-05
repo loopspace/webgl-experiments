@@ -5,7 +5,7 @@ var errorfn;
 function Image(s,c) {
     this.valid = true;
     this.source = s;
-    this.colour = new Float32Array(c);
+//    this.colour = new Float32Array(c);
     this.textures = [];
     this.setColours([
 	[1.,1.,1.,1.],
@@ -81,10 +81,10 @@ Image.prototype.initBuffers = function() {
     ]);
 
     this.coordinates = new Float32Array ([
+	1.0, 1.0,
+	0.0, 1.0,
 	1.0, 0.0,
 	0.0, 0.0,
-	1.0, 1.0,
-	0.0, 1.0
     ]);
     
     gl.useProgram(this.shaderProgram);
@@ -95,12 +95,14 @@ Image.prototype.initBuffers = function() {
 
     for (var i = 0; i < this.textures.length; i++) {
 	this.textures[i].texture = gl.createTexture();
+	this.textures[i].width = gl.getUniformLocation(this.shaderProgram,'width' + (i == 0 ? "" : i));
+	this.textures[i].height = gl.getUniformLocation(this.shaderProgram,'height' + (i == 0 ? "" : i));
     }
 //    this.texture = gl.createTexture();
 
     this.vertexColourAttribute = gl.getAttribLocation(this.shaderProgram, 'vertexColour');
     this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'textureCoordinate');
-    this.colourUniform = gl.getUniformLocation(this.shaderProgram,'colour');
+//    this.colourUniform = gl.getUniformLocation(this.shaderProgram,'colour');
 
 }
 
@@ -116,6 +118,8 @@ Image.prototype.getTextures = function() {
     var str = "";
     for (var i = 0; i < this.textures.length; i++) {
 	str += "uniform sampler2D " + this.textures[i].name + ";\n";
+	str += "uniform highp float width" + (i == 0 ? "" : i) + ";\n";
+	str += "uniform highp float height" + (i == 0 ? "" : i) + ";\n";
     }
     return str;
 }
@@ -142,13 +146,14 @@ Image.prototype.doBindings = function() {
 	this.bindTexture(i);
     }
     
-    gl.uniform4fv(this.colourUniform,this.colour);
+//    gl.uniform4fv(this.colourUniform,this.colour);
 
 }
 
 Image.prototype.bindTexture = function(i) {
     gl.activeTexture(gl.TEXTURE0 + i);
     gl.bindTexture(gl.TEXTURE_2D, this.textures[i].texture);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
     gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures[i].image);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
@@ -159,7 +164,12 @@ Image.prototype.bindTexture = function(i) {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     gl.uniform1i(gl.getUniformLocation(this.shaderProgram, this.textures[i].name), i);
 //    gl.bindTexture(gl.TEXTURE_2D, null);
-    
+
+    var img = this.textures[i].image;
+    var w = img.width;
+    var h = img.height;
+    gl.uniform1f(this.textures[i].width,w);    
+    gl.uniform1f(this.textures[i].height,h);    
 }
 
 Image.prototype.enableProgram = function() {

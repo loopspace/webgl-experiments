@@ -1,0 +1,48 @@
+merror {display:inline;font-size:1em;}
+math[display=block] {overflow:auto;}
+math { white-space: nowrap }
+
+/* Hack for Mozilla bug 449396 */
+[mathvariant="bold"] *  {
+  font-style: normal;
+  font-variant: normal;
+  font-weight: bold;
+}
+[mathvariant="italic"] *  {
+  font-style: italic;
+  font-variant: normal;
+  font-weight: normal;
+}
+[mathvariant="bold-italic"] *  {
+  font-style: italic;
+  font-variant: normal;
+  font-weight: bold;
+}
+[mathvariant="sans-serif"] *  {
+  font-style: normal;
+  font-variant: normal;
+  font-weight: normal;
+}
+[mathvariant="bold-sans-serif"] *  {
+  font-style: normal;
+  font-variant: normal;
+  font-weight: bold;
+}
+[mathvariant="sans-serif-italic"] *  {
+  font-style: italic;
+  font-variant: normal;
+  font-weight: normal;
+}
+[mathvariant="sans-serif-bold-italic"] *  {
+  font-style: italic;
+  font-variant: normal;
+  font-weight: bold;
+}
+math > mrow > mtable > mtr > mtd:nth-child(odd) {
+    padding-left: 2ex;
+    padding-right: 0;
+}
+math > mrow > mtable > mtr > mtd:nth-child(even) {
+    padding-left: 0;
+    padding-right: 2ex;
+}

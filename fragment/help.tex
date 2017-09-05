@@ -1,0 +1,416 @@
+\RequirePackage{luatex85}
+\documentclass[
+  html5,%
+  mathml,%
+  use filename%
+]{internet}
+
+\imode<doc>{
+  \usepackage{tcolorbox}
+  \usepackage{tikz}
+  \usetikzlibrary{
+    external,
+    calc,
+    arrows.meta
+  }
+  \tikzset{external/system call={lualatex \tikzexternalcheckshellescape -halt-on-error -interaction=batchmode -jobname "\image" "\texsource" && pdftoppm "\image.pdf" - | pnmtopng  > "\image.png"}}
+}
+
+\imode<text>{
+  \DeclareDocumentEnvironment{tcolorbox}{}{\htmvdiv{colorbox}}
+  {\endhtmvdiv}
+  \usepackage{tikzexternal}
+  \let\footnote=\marginpar
+}
+\tikzexternalize
+
+\usepackage{tutorial}
+\usepackage{hyperref}
+
+\tikzsetfigurename{webgl-figure} % Choose a sensible name here
+
+\let\origtikzsetnextfilename\tikzsetnextfilename
+\def\tikzsetnextfilename#1{%
+  \origtikzsetnextfilename{#1}
+  \mysetlabel{#1}
+}
+
+\newcommand{\mysetlabel}[1]{%
+  \gdef\mynextlabel{#1}}
+
+\newcommand{\autolabel}{%
+  \label{fig:\mynextlabel}
+  \global\let\mynextlabel\relax
+}
+
+
+\makeatletter
+\def\@Cardinal#1{%
+  \ifcase#1\or One\or Two\or Three\or Four\or Five\or Six\or Seven\or Eight\or Nine\or Ten\or Eleven\or Twelve\or Thirteen\or Fourteen\or Fifteen\or Sixteen\or Seventeen\or Eighteen\or Nineteen\or Twenty\or Twenty-One\or Twenty-Two\or Twenty-Three\or Twenty-Four\or Twenty-Five\or Twenty-Six\else\@ctrerr\fi}
+\def\Cardinal#1{\expandafter\@Cardinal\csname c@#1\endcsname}
+
+\let\prev@cl@section=\cl@section
+
+\let\cl@section\@empty
+
+\let\prev@sec=\section
+\renewcommand\section{\clearpage\prev@sec}
+\let\prev@app=\appendix
+\renewcommand\appendix{\let\cl@section=\prev@cl@section\prev@app}
+\makeatother
+
+\renewcommand\thesubsection{Task \Cardinal{subsection}:}
+
+
+
+\title{WebGL Fragment Shader Help}
+\date{\today}
+\begin{document}
+\maketitle
+
+\tableofcontents
+
+\section{About Shaders}
+
+OpenGL is a widespread method of drawing stuff on a screen.
+Many apps, games, and other programs use it to do the actual drawing part of what they do.
+That is, when a program has some object to draw then OpenGL is what is used to actually colour in some pixels on the screen.
+
+In order to do this, OpenGL has to know two things:
+%
+\begin{enumerate}
+\item Where to draw; that is, which pixels on the screen should be coloured in for the given object.
+\item What to draw; that is, once we know which pixels should be coloured then we need to figure out the colour.
+\end{enumerate}
+
+An OpenGL \emph{shader} is responsible for doing this, and a \emph{shader} therefore has two parts:
+%
+\begin{enumerate}
+\item A \emph{vertex program} which answers the question of where to draw, and
+\item a \emph{fragment program} which answers the question of what to draw.
+\end{enumerate}
+
+This website is concerned with the second of these, the \emph{fragment program}, but to understand that we need to know a little about the first as well.
+
+As the name suggests, the vertex program works by outlining a polygon on the screen by setting its \emph{vertices}.
+The polygons used are usually triangles but some versions of OpenGL allow for quadrilaterals as well.
+As far as \emph{this} website is concerned, the vertex program sets up a rectangle on the webpage and the fragment program will draw inside this rectangle.
+
+What the vertex program also does is place some data at each vertex of the region.
+That data is then \emph{interpolated} into the drawing region and can be used by the fragment program when deciding the colour of a pixel.
+As a simple example, the vertex program can put a colour at each vertex.
+Then it is as if that colour spreads out into the rectangle, blending with the colours at the other corners as it goes.
+
+The \emph{fragment program} then looks at each pixel in turn and decides what colour to put at that pixel.
+To make that decision, it can use the interpolated information from the vertex program together with other information given to it by the program that started the drawing process.
+
+This website allows you to edit the core part of the fragment program to gain a little experience with what it does. 
+
+\section{Basic Syntax}
+
+The end result of the code that you type into the text box is to set the colour of a pixel on the screen.
+Colours on computers are usually specified by mixing a certain amount of red, green, and blue.
+They can then be made partially transparent.
+In OpenGL, the ranges for these are from \(0\) to \(1\).
+
+\subsection{Basic Colours}
+
+Replace the code in the box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = vec4(1.,1.,1.,1.);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Click \texttt{Reload} to see what this does.
+
+Some important things to note from this:
+%
+\begin{enumerate}
+\item Every line ends with \verb+;+
+\item The last line will always be of the form \verb+gl_FragColor = ...+
+\item Whole numbers are written with a decimal point; e.g., \(1.\)
+\end{enumerate}
+
+Try changing the numbers in the first line to see what happens (remember that they must be between \(0\) and \(1\)).
+You must use a decimal point even if you use \(0\) or \(1\), so write these as \(0.\) and \(1.\) respectively.
+Vary one number at a time to see its effect.
+
+\begin{tcolorbox}
+OpenGL uses four numbers to define a colour, so when working with a colour it wants to link those four numbers together and in a specific order.
+The word \verb+vec4+ says ``These four numbers should be used to specify a single colour''.
+Writing
+%
+\begin{verbatim}
+lowp vec4 c = vec4(1.,1.,1.,1.);
+\end{verbatim}
+%
+says ``Use \verb+c+ as a label for a colour, and store in it the colour where each component is set to \(1.\)''.
+\end{tcolorbox}
+
+\subsection{Varying Colours}
+
+Replace the code in the box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = vColour;
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Click \verb+Reload+ to see what this does.
+
+Try changing the corner colours to see their effect (the image should automatically update when these colours are changed).
+
+\begin{tcolorbox}
+The special word \verb+vColour+ defines a colour that varies over the rectangle.
+It is as if a blob of each of the corner colours has been placed at their respective corner and then blended into the rectangle.
+
+Some combinations of colour will result in a definite line from top left to bottom right.
+This shows that the rectangle is actually made up of two triangles and the blending of the colours is done by the triangles rather than the rectangle.  
+\end{tcolorbox}
+
+\subsection{Blending}
+
+Replace the code in the box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = vec4(1.,1.,1.,1.);
+c *= vColour;
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+In this case, you can vary the numbers in the first line (you need to click \verb+Reload+ when you do) and the corner colours.
+
+\begin{tcolorbox}
+What happens here is that we have two colours: a base colour, \verb+c+, and the varying colour, \verb+vColour+.
+We can mix these colours in a variety of ways.
+The above code \emph{multiplies} the components of the colours so that the resulting red component is the result of multiplying the red component of the base colour by the red component of the varying colour.
+
+The syntax \verb+c *= vColour+ says to replace \verb+c+ by the result of this multiplication rather than making a new variable to store it in.
+\end{tcolorbox}
+
+Other ways of combining the colours are:
+%
+\begin{itemize}
+\item \verb!c += vColour;!
+\item \verb!c.rgb -= vColour.rgb;!
+
+Try \verb!c -= vColour! first.
+You should see just a white rectangle.
+This is because the transparency gets set to \(0\) and the effect of this is to make it blank.
+Adding the \verb+.rgb+ means ``Only apply this to the red, green, blue components and leave the transparency alone.''.
+
+\item \verb!c.rgb /= vColour.rgb;!
+
+We need the \verb!.rgb! for the same reason as above.
+Also, this works best when the first three numbers in the base colour are small.
+Try \verb!vec4(.1,.1,.1,1.)!
+\end{itemize}
+
+By using \verb!.rgb! you can vary the effect that the operations have.
+You can even vary the letters to produce more variety in your effects.
+The rules are:
+%
+\begin{itemize}
+\item The letters must be from \texttt+r+ (red), \texttt+g+ (green), \texttt+b+ (blue), and \texttt+a+ (alpha, aka transparency); repetitions are allowed on the right-hand side.
+\item The length of the letters must be \(1\), \(2\), \(3\), or \(4\) and must be the same on both sides.
+\end{itemize}
+
+There are other, more sophisticated, methods of combining colours which we'll explore in later sections.
+
+\subsection{Using a Picture}
+
+The fragment program can also read information from pictures.
+In OpenGL, a picture is referred to as a \verb+texture+.
+On this website, you can choose textures via the drop down menu and can add or remove textures so that you can use more than one picture.
+
+Replace the code in the text box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+You can choose different images via the menu.
+The result should update when the image is changed.
+
+There are several new things in this code.
+
+\begin{itemize}
+\item \verb+texture+ this refers to the picture that you've selected in the menu.
+\item \verb+texture2D(...)+ this looks up a particular point in the picture and returns the colour at that position.
+\item \verb+vTexcoord+ this relates the pixel on the screen to its position in the picture.
+\end{itemize}
+
+That last is the key here so let's examine it more closely.
+To specify a point in the image takes two numbers: and \(x\)--coordinate and a \(y\)--coordinate.
+These are packed together into \verb+vTexcoord+, in a similar fashion to a colour it is a list of two numbers the first of which is the \(x\)--coordinate and the second is the \(y\)--coordinate.
+
+The coordinates are scaled so that the rectangle with the picture in has lower left corner at \((0,0)\) and upper right corner at \((1,1)\).
+
+\subsection{Modifying a Picture}
+
+Replace the code in the text box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Just as \verb+vec4+ refers to a list of four numbers and is used to represent a colour, so \verb+vec2+ refers to a list of two numbers and is used to represent a position.
+
+The above adds \(.5\) to both the \(x\)--coordinates and \(y\)--coordinates of the look-up position.
+So at a point, say \((.2,.3)\), it actually looks at the colour on the image at \((.7,.8)\).
+This has the effect of moving the image down and to the left.
+
+What is worth noting here is what happens in the other quadrants.
+At, say, \((.7,.3)\) then the program is looking at \((1.2,.3)\).
+This is outside the picture, so what happens is the \(1.2\) gets replaced by \(1\) and it looks up the colour on the very edge of the picture.
+
+Similarly, a look-up at a negative co-ordinate gets replaced by a look-up on the lower edge of the picture.
+Later, we'll see how to fix this so that it wraps around.
+
+\subsection{Zooming In}
+
+Replace the code in the text box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t -= vec2(.5,.5);
+t /= 2.;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+How would you describe the effect of this?
+Try changing the numbers to see if your description is accurate (make sure that the two occurrences of \verb+vec2(.5,.5)+ stay the same as each other).
+
+\subsection{Mixing Colour and Texture}
+
+Press \verb+Reset+ so that the text box shows the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+c *= vColour;
+// Your code in here
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Click \verb+Reload+ to see what this does.
+
+As before, you can use different operations like \verb!+=! or \verb!-=! and can use \verb!.rgb!.
+You can also use a fixed colour instead of \verb!vColour!.
+
+
+\section{Mathematics}
+
+The various things that the fragment program works with all consist of numbers or lists of numbers.
+Therefore, one can do standard mathematical stuff with them.
+There are also several functions that prove very useful in fragment programs.
+
+\subsection{Interpolating Pictures}
+
+Click \verb+Add texture+ to get a second texture (which will be called \verb+texture1+).
+Choose two different images for the two textures.
+
+Replace the code in the text box with the following, make sure the \(1.\) in the last line has its decimal point:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec4 c1 = texture2D(texture1, vTexcoord);
+gl_FragColor = vTexcoord.x * c + (1. - vTexcoord.x) * c1;
+\end{verbatim}
+\end{tcolorbox}
+
+There's not a lot to experiment with here.
+Try changing the images, and you could swap \verb+c+ and \verb+c1+ in the last line.
+
+\begin{tcolorbox}
+Recall that \verb+vTexcoord+ tells the fragment program where the current pixel is in the rectangle.
+It is a list of two numbers: the \(x\)--coordinate and the \(y\)--coordinate.
+
+To get at the numbers individually we can use a variation of the \verb!.rgb! syntax.
+The first number, the \(x\)--coordinate, is \verb+vTexcoord.x+ and the second is \verb+vTexcoord.y+.
+So \verb+vTexcoord.x+ tells us how far across the image we are.
+
+The formula \verb!vTexcoord.x * c + (1. - vTexcoord.x) * c1! mixes the colours from the two images depending on how far across the image we are.
+On the left-hand edge, \verb+vTexcoord.x+ is equal to \(0\), whereupon the formula simplifies to just \verb+c1+.
+That is, on the left-hand edge the colour is from \verb+texture1+.
+On the right-hand edge, \verb+vTexcoord.x+ is equal to \(1\), whereupon it simplifies to \verb+c+.
+That is, on the right-hand edge the colour is from \verb+texture+.
+
+Half way across, \verb+vTexcoord.x+ is equal to \(.5\) and the expression becomes \verb!.5 * c + .5 * c1! which mixes the two colours equally.
+Thus half way along, the colour is a perfect mix of the two pictures.
+\end{tcolorbox}
+
+\subsection{Smoothly Interpolating Pictures}
+
+The above interpolates \emph{linearly} between the two pictures.
+Depending on the pictures, the place at which the images are obviously mixing can be quite close to the edges.
+We can make a slightly more complicated version of the above to concentrate the mixing in the centre.
+
+Make sure you have at least two textures, and replace the code in the text box with the following (as before, watch out for the decimal points):
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec4 c1 = texture2D(texture1, vTexcoord);
+lowp float t = pow(vTexcoord.x,2.) * (3. * vTexcoord.x - 2.);
+gl_FragColor = t * c + (1. - t) * c1;
+\end{verbatim}
+\end{tcolorbox}
+
+The key here is the formula on the third line.
+In normal mathematical notation, this is:
+%
+\[
+  x^2 (3 x - 2) = 3 x^3 - 2 x^2.
+  \]
+%
+The graph of this, for \(0 \le x \le 1\) is in Figure~\ref{fig:smoothstep}.
+
+\tikzsetnextfilename{smoothstep}
+\begin{figure}
+\centering
+\begin{tikzpicture}[>=Latex]
+\draw[->] (-.5,0) -- (4.5,0);
+\draw[->] (0,-.5) -- (0,4.5);
+\draw (4,0) -- +(0,-.3) node[below] {\(1\)};
+\draw (0,4) -- +(-.3,0) node[left] {\(1\)};
+\draw (0,0) .. controls +(4/3,0) and +(-4/3,0) .. (4,4);
+\end{tikzpicture}
+\caption{The graph of \(y = 3 x^3 - 2 x^2\).}
+\autolabel
+\end{figure}
+
+In this code, we've seen how to write powers.
+The code \verb!pow(vTexcoord.x,2.)! squares the value of \verb!vTexcoord.x!.
+
+\subsection{Shifting a Picture}
+
+
+
+\section{Experiments}
+
+\section{Types of Variable}
+
+
+\end{document}

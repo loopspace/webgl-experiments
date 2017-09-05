@@ -24,15 +24,41 @@
     width: 70%;
 }
 
-#error {
+#wrapper {
     position: absolute;
     right: 0px;
     top: 0px;
+    margin-left: 30%;
+    width: 70%;
+}
+
+#error {
+    float: left;
+    display: inline-block;
+    border: solid;
+    border-width: 2px;
     background-color: #f5f5dc;
     border-radius: 5px;
-    border-color: #000;
+    border-color: #f50000;
     white-space: pre;
     padding: 10px;
     color: #f50000;
     display: none;
+}
+
+#help {
+    float: right;
+    display: inline-block;
+    border: solid;
+    border-width: 2px;
+    background-color: #bff;
+    border-radius: 5px;
+    border-color: #909;
+    padding: 0px 10px;
+    font-size: 200%;
+}
+
+#help a {
+    text-decoration: none;
+    color: #909;
 }

@@ -1,0 +1,74 @@
+#toc {
+    float: left;
+    font-size: 70%;
+    margin-left: -220px;
+    position: fixed;
+    width: 200px;
+}
+
+#background {
+    background-color: #eee;
+    border: 2px solid;
+    border-radius: 2ex;
+    height: 90vh;
+    height: calc(90vh - 3em);
+    margin-top: 2em;
+    position: absolute;
+    margin-left: 240px;
+    max-width: 70ex;
+    width: 100%;
+    padding: calc(2ex - 2px);
+}
+
+#content {
+    height: 85vh;
+    height: calc(90vh - 5em);
+    top: 3em;
+    margin-left: 240px;
+    overflow-x: hidden;
+    overflow-y: scroll;
+    padding: 2ex 22ex 2ex 2ex;
+    max-width: 70ex;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
+}
+
+.marginpar {
+    margin-right: -25ex;
+}
+
+body h1:nth-of-type(1) {
+    margin-top: 0;
+}
+
+h1 {
+    margin-top: 5em;
+}
+#toc h1 {
+    margin-top: 0;
+}
+
+#toc p {
+    margin-bottom: 0;
+    margin-top: 0;
+}
+h2 {
+    margin-top: 3em;
+}
+
+#title {
+    font-weight: bold;
+    font-size: 150%;
+    position: fixed;
+    top: 0;
+    left: 2em;
+}
+
+#titlepage {
+    float: left;
+    margin-left: -220px;
+    display: inline;
+    position: fixed;
+    bottom: 0;
+    right: 1em;
+}

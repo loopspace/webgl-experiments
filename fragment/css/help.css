@@ -1,0 +1,41 @@
+#container {
+    background: #fff;
+    border-radius: 5px;
+    height: 100%;
+    margin-left: 200px;
+    margin-right: 200px;
+    border: solid black 1px;
+    padding: 1em;
+    overflow-y: scroll;
+}
+
+body {
+    background: #ccc;
+}
+
+#toc a {
+    text-decoration: none;
+    color: #000;
+}
+
+#toc a:hover {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+    color: #555;
+}
+
+.intlink {
+    text-decoration: none;
+    color: #000;
+}
+
+.intlink:hover {
+    text-decoration-line: underline;
+    text-decoration-style: dashed;
+    color: #555;
+}
+
+.divider {
+    padding: 0 1ex;
+}
+

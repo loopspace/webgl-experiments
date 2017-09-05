@@ -1,0 +1,28 @@
+#content {
+    padding: 0ex 2ex;
+    -webkit-overflow-scrolling: touch;
+    background-color: #eee;
+    border: 2px solid;
+    border-radius: 2ex;
+}
+
+#toc {
+    clear: both;
+}
+
+#titlepage {
+    width: 100%;
+    text-align: right;
+}
+
+#title {
+    font-weight: bold;
+    font-size: 200%;
+    width: 100%;
+    text-align: center;
+}
+
+#author, #date, #licence {
+    display: inline-block;
+}
+
