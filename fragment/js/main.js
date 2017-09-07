@@ -30,7 +30,53 @@ var imagesrcs = [
 	"NorwayOct_6_1.jpg",
 	"P7255075.JPG",
 	"P7255088.JPG",
-	"P7255097.JPG"
+    "P7255097.JPG",
+		  "ShakespeareBianca.png",
+		  "ShakespeareBrutus.png",
+		  "ShakespeareCleopatra.png",
+		  "ShakespeareCordelia.png",
+		  "ShakespeareDesdamona.png",
+		  "ShakespeareFalstaff.png",
+		  "ShakespeareHamlet.png",
+		  "ShakespeareHero.png",
+		  "ShakespeareJuliet.png",
+		  "ShakespeareKent.png",
+		  "ShakespeareLady Macbeth.png",
+		  "ShakespeareMacbeth.png",
+		  "ShakespeareRomeo.png",
+		  "ShakespeareYago.png",
+    "silhouette-animaux-01.png",
+    "silhouette-animaux-03.png",
+    "silhouette-animaux-05.png",
+    "silhouette-animaux-12.png",
+    "silhouette-animaux-13.png",
+    "silhouette-animaux-14.png",
+    "silhouette-animaux-16.png",
+    "silhouette-animaux-17.png",
+    "silhouette-animaux-18.png",
+    "silhouette-animaux-25.png",
+    "silhouette-animaux-28.png",
+    "rectangle.png",
+	"diamond.png",
+	"trapezium.png",
+	"semicircle.png",
+	"hexagon.png",
+	"octagon.png",
+	"star.png",
+	"kite.png",
+	"dart.png",
+	"sector.png",
+	"cloud.png",
+	"starburst.png",
+	"signal.png",
+	"tape.png",
+	"arrow.png",
+	"ellipseCallout.png",
+	"rectangleCallout.png",
+	"cloudCallout.png",
+	"roundedRectangle.png",
+	"chamferedRectangle.png",
+	"ellipse.png"
 ];
 
 var textures = [
@@ -248,11 +294,20 @@ function addImage() {
 	images[ilen] = document.createElement('img');
 	images[ilen].src = reader.result;
 	imgdiv.appendChild(images[ilen]);
-	var sel = document.getElementById('texture');
-	var opt = document.createElement('option');
-	opt.text = file.name;
-	opt.value = sel.length;
-	sel.appendChild(opt);
+	var sel,optgrps,opt,optgrp;
+	for (var i = 0; i < textures.length; i++) {
+	    sel = document.getElementById('texture' + (i == 0 ? '' : i));
+	    optgrps = sel.childNodes;
+	    for (var j = 0; j < optgrps.length; j++) {
+		if (optgrps[j].tagName == 'OPTGROUP') {
+		    optgrp = optgrps[j];
+		}
+	    }
+	    opt = document.createElement('option');
+	    opt.text = file.name;
+	    opt.value = sel.length;
+	    optgrp.appendChild(opt);
+	}
     }
 
     if (file){
