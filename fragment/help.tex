@@ -6,6 +6,7 @@
 ]{internet}
 
 \imode<doc>{
+  \usepackage{amsmath}
   \usepackage{tcolorbox}
   \usepackage{tikz}
   \usetikzlibrary{
@@ -27,6 +28,8 @@
 \usepackage{tutorial}
 \usepackage{hyperref}
 
+\SetLinkType{}
+
 \tikzsetfigurename{webgl-figure} % Choose a sensible name here
 
 \let\origtikzsetnextfilename\tikzsetnextfilename
@@ -43,6 +46,8 @@
   \global\let\mynextlabel\relax
 }
 
+\DeclareMathOperator\fract{fract}
+\DeclareMathOperator\abs{abs}
 
 \makeatletter
 \def\@Cardinal#1{%
@@ -257,6 +262,7 @@ These are packed together into \verb+vTexcoord+, in a similar fashion to a colou
 The coordinates are scaled so that the rectangle with the picture in has lower left corner at \((0,0)\) and upper right corner at \((1,1)\).
 
 \subsection{Modifying a Picture}
+\label{sec:modify}
 
 Replace the code in the text box with the following:
 
@@ -406,11 +412,70 @@ The code \verb!pow(vTexcoord.x,2.)! squares the value of \verb!vTexcoord.x!.
 
 \subsection{Shifting a Picture}
 
+In \ref{sec:modify}, we had the following code:
 
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+This shifts the picture down and to the left, but the remainder of the picture looks a little odd.
+The problem is that the program tries to get the colour from the picture at a point that isn't inside the picture.
+To fix this, we can use the \verb!fract! function.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t += vec2(.5,.5);
+t = fract(t);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+The \verb!fract! function throws away the whole number part of a number, leaving just the decimal part.
+
+\begin{align*}
+\fract(2.3) &= .3 \\
+\fract(1.7) &= .7 \\
+\fract(.5) &= .5
+\end{align*}
+
+Other useful functions for changing the texture coordinates (and colours) are:
+
+\begin{tabular}{rll}
+\verb!abs! & the \emph{absolute value} of a number: & \(\abs(-3) = 3\) \\
+\verb!min! & the \emph{minimum} of some numbers: & \(\min(3,5) = 3\) \\
+\verb!max! & the \emph{maximum} of some numbers: & \(\max(3,5) = 5\)
+\end{tabular}
+
+Try the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t -= vec2(.5,.5);
+t = abs(t);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t = min(vec2(.9,.9),max(vec2(.1,.1),t));
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
 
 \section{Experiments}
 
 \section{Types of Variable}
-
 
 \end{document}
