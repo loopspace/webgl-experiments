@@ -5,6 +5,8 @@ var height;
 var aspect;
 var start;
 
+var img;
+
 // Matrix stack
 var matrixStack = [];
 
@@ -13,38 +15,39 @@ var perspectiveMatrix;
 
 // Images
 var imagesrcs = [
-	"100_3780.jpg",
-	"100_3781.jpg",
-	"100_4087.jpg",
-	"100_4100.jpg",
-	"100_4116.jpg",
-	"100_4127.jpg",
-	"100_4201.jpg",
-	"AutumnColours_96_1.jpg",
-	"Bymarka_89.jpg",
-	"NorwayAugust_117_1.jpg",
-	"NorwayAugust_39_1.jpg",
-	"NorwayOct_1.jpg",
-	"NorwayOct_10_1.jpg",
-	"NorwayOct_3_1.jpg",
-	"NorwayOct_6_1.jpg",
-	"P7255075.JPG",
-	"P7255088.JPG",
+    "circles.png",
+    "100_3780.jpg",
+    "100_3781.jpg",
+    "100_4087.jpg",
+    "100_4100.jpg",
+    "100_4116.jpg",
+    "100_4127.jpg",
+    "100_4201.jpg",
+    "AutumnColours_96_1.jpg",
+    "Bymarka_89.jpg",
+    "NorwayAugust_117_1.jpg",
+    "NorwayAugust_39_1.jpg",
+    "NorwayOct_1.jpg",
+    "NorwayOct_10_1.jpg",
+    "NorwayOct_3_1.jpg",
+    "NorwayOct_6_1.jpg",
+    "P7255075.JPG",
+    "P7255088.JPG",
     "P7255097.JPG",
-		  "ShakespeareBianca.png",
-		  "ShakespeareBrutus.png",
-		  "ShakespeareCleopatra.png",
-		  "ShakespeareCordelia.png",
-		  "ShakespeareDesdamona.png",
-		  "ShakespeareFalstaff.png",
-		  "ShakespeareHamlet.png",
-		  "ShakespeareHero.png",
-		  "ShakespeareJuliet.png",
-		  "ShakespeareKent.png",
-		  "ShakespeareLady Macbeth.png",
-		  "ShakespeareMacbeth.png",
-		  "ShakespeareRomeo.png",
-		  "ShakespeareYago.png",
+    "ShakespeareBianca.png",
+    "ShakespeareBrutus.png",
+    "ShakespeareCleopatra.png",
+    "ShakespeareCordelia.png",
+    "ShakespeareDesdamona.png",
+    "ShakespeareFalstaff.png",
+    "ShakespeareHamlet.png",
+    "ShakespeareHero.png",
+    "ShakespeareJuliet.png",
+    "ShakespeareKent.png",
+    "ShakespeareLady Macbeth.png",
+    "ShakespeareMacbeth.png",
+    "ShakespeareRomeo.png",
+    "ShakespeareYago.png",
     "silhouette-animaux-01.png",
     "silhouette-animaux-03.png",
     "silhouette-animaux-05.png",
@@ -57,26 +60,26 @@ var imagesrcs = [
     "silhouette-animaux-25.png",
     "silhouette-animaux-28.png",
     "rectangle.png",
-	"diamond.png",
-	"trapezium.png",
-	"semicircle.png",
-	"hexagon.png",
-	"octagon.png",
-	"star.png",
-	"kite.png",
-	"dart.png",
-	"sector.png",
-	"cloud.png",
-	"starburst.png",
-	"signal.png",
-	"tape.png",
-	"arrow.png",
-	"ellipseCallout.png",
-	"rectangleCallout.png",
-	"cloudCallout.png",
-	"roundedRectangle.png",
-	"chamferedRectangle.png",
-	"ellipse.png"
+    "ellipse.png",
+    "diamond.png",
+    "trapezium.png",
+    "semicircle.png",
+    "hexagon.png",
+    "octagon.png",
+    "star.png",
+    "kite.png",
+    "dart.png",
+    "sector.png",
+    "cloud.png",
+    "starburst.png",
+    "signal.png",
+    "tape.png",
+    "arrow.png",
+    "ellipseCallout.png",
+    "rectangleCallout.png",
+    "cloudCallout.png",
+    "roundedRectangle.png",
+    "chamferedRectangle.png",
 ];
 
 var textures = [
@@ -161,6 +164,9 @@ function start() {
 
     btn = document.getElementById('addtex');
     btn.addEventListener('click',function() {addTexture(); setTextures(); loadShader(); });
+
+    btn = document.getElementById('rmtex');
+    btn.addEventListener('click',function() {rmTexture(); setTextures(); loadShader(); });
     
     var cols = ['ul','ur','bl','br'];
     var col;
@@ -328,13 +334,27 @@ function addTexture() {
     tr.appendChild(td);
     var sel = document.getElementById('texture');
     var selcl = sel.cloneNode(true);
-    selcl.addEventListener('change',setTextures);
+    selcl.addEventListener('change',function() {setTextures(); drawScene();});
     selcl.id = 'texture' + tlen;
     textures.push('texture' + tlen);
     td = document.createElement('td');
     td.appendChild(selcl);
     tr.appendChild(td);
     tbl.appendChild(tr);
+}
+
+function rmTexture() {
+    textures.pop();
+    img.rmTexture();
+    var tbl = document.getElementById('textable');
+    var rows = tbl.childNodes;
+    var lastrow;
+    for (var j = 0; j < rows.length; j++) {
+	if (rows[j].tagName == 'TR') {
+	    lastrow = rows[j];
+	}
+    }
+    tbl.removeChild(lastrow);
 }
 
 function doError(e) {

@@ -218,6 +218,9 @@ Image.prototype.setTexture = function(i,t,img) {
 //    this.textures[i].location = gl["TEXTURE" + i];
 }
 
+Image.prototype.rmTexture = function() {
+    this.textures.pop();
+}
 
 Image.prototype.setCoordinates = function() {
     this.coordinates = new Float32Array([
