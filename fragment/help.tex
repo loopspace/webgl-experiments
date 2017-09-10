@@ -47,6 +47,7 @@
 }
 
 \DeclareMathOperator\fract{fract}
+\DeclareMathOperator\clamp{clamp}
 \DeclareMathOperator\abs{abs}
 
 \makeatletter
@@ -326,6 +327,7 @@ You can also use a fixed colour instead of \verb!vColour!.
 
 
 \section{Mathematics}
+\label{sec:maths}
 
 The various things that the fragment program works with all consist of numbers or lists of numbers.
 Therefore, one can do standard mathematical stuff with them.
@@ -342,7 +344,7 @@ Replace the code in the text box with the following, make sure the \(1.\) in the
 \begin{verbatim}
 lowp vec4 c = texture2D(texture, vTexcoord);
 lowp vec4 c1 = texture2D(texture1, vTexcoord);
-gl_FragColor = vTexcoord.x * c + (1. - vTexcoord.x) * c1;
+gl_FragColor = mix(c1,c,vTexcoord.x);
 \end{verbatim}
 \end{tcolorbox}
 
@@ -357,17 +359,18 @@ To get at the numbers individually we can use a variation of the \verb!.rgb! syn
 The first number, the \(x\)--coordinate, is \verb+vTexcoord.x+ and the second is \verb+vTexcoord.y+.
 So \verb+vTexcoord.x+ tells us how far across the image we are.
 
-The formula \verb!vTexcoord.x * c + (1. - vTexcoord.x) * c1! mixes the colours from the two images depending on how far across the image we are.
-On the left-hand edge, \verb+vTexcoord.x+ is equal to \(0\), whereupon the formula simplifies to just \verb+c1+.
+The code \verb!mix(c1,c,vTexcoord.x)! mixes the colours from the two images depending on how far across the image we are.
+On the left-hand edge, \verb+vTexcoord.x+ is equal to \(0\), and \verb!mix! returns just \verb+c1+.
 That is, on the left-hand edge the colour is from \verb+texture1+.
-On the right-hand edge, \verb+vTexcoord.x+ is equal to \(1\), whereupon it simplifies to \verb+c+.
+On the right-hand edge, \verb+vTexcoord.x+ is equal to \(1\), whereupon it returns just \verb+c+.
 That is, on the right-hand edge the colour is from \verb+texture+.
 
-Half way across, \verb+vTexcoord.x+ is equal to \(.5\) and the expression becomes \verb!.5 * c + .5 * c1! which mixes the two colours equally.
+Half way across, \verb+vTexcoord.x+ is equal to \(.5\) and the \verb!mix! function mixes the two colours equally.
 Thus half way along, the colour is a perfect mix of the two pictures.
 \end{tcolorbox}
 
 \subsection{Smoothly Interpolating Pictures}
+\label{task:interpolating}
 
 The above interpolates \emph{linearly} between the two pictures.
 Depending on the pictures, the place at which the images are obviously mixing can be quite close to the edges.
@@ -380,7 +383,7 @@ Make sure you have at least two textures, and replace the code in the text box w
 lowp vec4 c = texture2D(texture, vTexcoord);
 lowp vec4 c1 = texture2D(texture1, vTexcoord);
 lowp float t = pow(vTexcoord.x,2.) * (3. * vTexcoord.x - 2.);
-gl_FragColor = t * c + (1. - t) * c1;
+gl_FragColor = mix(c1,c,t);
 \end{verbatim}
 \end{tcolorbox}
 
@@ -453,6 +456,11 @@ Other useful functions for changing the texture coordinates (and colours) are:
 \verb!max! & the \emph{maximum} of some numbers: & \(\max(3,5) = 5\)
 \end{tabular}
 
+Another useful function is \verb!clamp!.
+This is used to \emph{clamp} one number between two others.
+For example, \(\clamp(t,0,1)\) will always return a number that is between \(0\) and \(1\).
+If \(t\) is between \(0\) and \(1\) then it will return \(t\), but if \(t\) is below \(0\) it will return \(0\) and if \(t\) is above \(1\) it will return \(1\).
+
 Try the following:
 
 \begin{tcolorbox}
@@ -468,14 +476,320 @@ gl_FragColor = c;
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t = min(vec2(.9,.9),max(vec2(.1,.1),t));
+t = min(vec2(.9,.9),t);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
 
-\section{Experiments}
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t = max(vec2(.1,.1),t);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
 
-\section{Types of Variable}
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t = clamp(t,vec2(.1,.1),vec2(.9,.9));
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+\section{Advanced Mixing}
+
+In Section~\ref{sec:maths} we saw some ways to mix two pictures.
+In this section, we'll see some more that offer more control.
+
+\subsection{Masks}
+
+With two pictures, one way to decide how to mix them is to use a \emph{mask}.
+This acts like the tape that painters put down to protect some areas when decorating: the places where the tape was show the original colour and where it wasn't shows the new colour.
+
+Using a mask requires three pictures: the two pictures to be mixed and the mask.
+There are various masks built in, to see what they look like use the following code and select a mask as the main texture.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+To use a mask to select between two pictures, we use the interpolation formula as explained in \ref{task:interpolating} but with the mask colour instead of the texture coordinates.
+
+With the following code, the two pictures are \verb+texture+ and \verb+texture1+ while the mask is \verb+texture2+.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec4 c1 = texture2D(texture1, vTexcoord);
+lowp vec4 m = texture2D(texture2, vTexcoord);
+c = mix(c1,c,m);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+A standard extension is to include grey in the mask to indicate partial masking. 
+
+\subsection{Alpha Masks}
+
+With some pictures, the part that you want masked is (almost) always going to be the same.
+For these pictures it is possible to add the mask to the picture by making parts of it transparent.
+This is done using the \emph{alpha channel}.
+Recall that OpenGL uses four numbers to specify a colour.
+Three of these are the red, green, and blue components of that colour.
+The fourth is the \emph{alpha} component which specifies the transparency.
+This can be used in place of a mask.
+
+The \emph{silhouettes} and \emph{characters} are good ones to use for the second texture with this.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec4 c1 = texture2D(texture1, vTexcoord);
+c.rgb = mix(c.rgb,c1.rgb,c1.a);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Again, we see the formula:
+%
+\[
+  (1 - t) a + t b
+  \]
+%
+occurring.
+This time, the \(t\) parameter is the alpha channel of the second image, while \(a\) and \(b\) are the red, green, and blue channels of the two images.
+
+If you try this with one of the characters, the result might look a little odd in that the character is distorted.
+This is because the second texture is stretched to fit the same size as the first.
+We can correct for this because the program tells the shader how big each image is: \verb+width+ and \verb+height+ are for the initial texture, then \verb+width1+ and \verb+height1+ for the texture \verb+texture1+ and so on. 
+
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec2 t = vTexcoord;
+t.x *= width/width1;
+t.y *= height/height1;
+lowp vec4 c1 = texture2D(texture1, t);
+c.rgb = mix(c.rgb,c1.rgb,c1.a);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Now we might decide that the character is too small and in the wrong place.
+We can move it around by adjusting the \verb+t+ variable.
+It's probably easiest to think of moving the character relative to the background so we move it before adjusting the size.
+Recall that the texture coordinates are scaled so that the background image is one unit across and one unit up.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec2 t = vTexcoord;
+t -= vec2(.5,.5);
+t /= 5.;
+t.x *= width/width1;
+t.y *= height/height1;
+lowp vec4 c1 = texture2D(texture1, t);
+c.rgb = mix(c.rgb,c1.rgb,c1.a);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Notice that to make the character bigger then we \emph{divide} the texture coordinates by the scale factor, and to move it to a coordinate then we \emph{subtract} the amount we want to translate it by.
+Depending on the background that you use and the characters, you may need to adjust the scale.
+
+Adding more characters is simply a matter of repeating the relevant code (in a full shader editor, you could define a function to do this and simply call that, but this system doesn't allow you that much control).
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = texture2D(texture, vTexcoord);
+lowp vec2 t = vTexcoord;
+t -= vec2(.5,.1);
+t /= 2.;
+t.x *= width/width1;
+t.y *= height/height1;
+lowp vec4 c1 = texture2D(texture1, t);
+c.rgb = mix(c.rgb,c1.rgb,c1.a);
+lowp vec2 t2 = vTexcoord;
+t2 -= vec2(.6,.1);
+t2 /= 2.;
+t2.x *= width/width2;
+t2.y *= height/height2;
+lowp vec4 c2 = texture2D(texture2, t2);
+c.rgb = mix(c.rgb,c2.rgb,c2.a);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+
+\section{Further Experiments}
+
+We've only scratched the surface of what's possible with shaders, even with this restricted situation.
+Here are some more to play with.
+
+\subsection{Squaring}
+
+If you know about complex numbers, this one does \(z \mapsto z^2\).
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 tx;
+tx.x = t.x * t.x - t.y * t.y;
+tx.y = 2. * t.x * t.y;
+tx /= 2.;
+tx += .5;
+lowp vec4 c = texture2D(texture, tx);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+If you liked that one, try this:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 tx;
+tx.x = t.x * t.x * t.x - 3. * t.x * t.y * t.y;
+tx.y = 3. * t.x * t.x * t.y - t.y * t.y * t.y;
+tx /= 2.;
+tx += .5;
+lowp vec4 c = texture2D(texture, tx);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Droste}
+
+The Droste effect is where an image gets copied into itself.
+This is quite straightforward with shaders.
+
+First, a circular one.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+t.x *= width/height;
+lowp float r = length(t);
+t /= r;
+r = pow(2.,-fract(-log2(r)));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+To make it elliptical, with the aspect ratio of the picture, comment out the lines with \verb+width/height+ in them.
+To change the focus, change the \verb+vec2(.5,.5)+ to something like \verb+vec2(.3,.6)+ both in the first line and near the end.
+
+Next, square.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+t.x *= width/height;
+lowp float r = max(abs(t.x), abs(t.y));
+t /= r;
+r = pow(2.,-fract(-log2(r)));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Or we could have a diamond.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+t.x *= width/height;
+lowp float r = abs(t.x) + abs(t.y);
+t /= r;
+r = pow(2.,-fract(-log2(r)));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += vec2(.5,.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+\subsection{Escher}
+
+If you like the Droste effect, here's an Escherian spin on them.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - .5)*2.;
+t.x *= width/height;
+lowp float r = length(t);
+lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+t /= r;
+r = pow(2.,-fract(-log2(r) + th));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += .5;
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Now with squares.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - .5)*2.;
+t.x *= width/height;
+lowp float r = max(abs(t.x),abs(t.y));
+lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+t /= r;
+r = pow(2.,-fract(-log2(r) + th));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += .5;
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+
+And finally, with diamonds.
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = (vTexcoord - .5)*2.;
+t.x *= width/height;
+lowp float r = abs(t.x) + abs(t.y);
+lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+t /= r;
+r = pow(2.,-fract(-log2(r) + th));
+t *= r;
+t.x /= width/height;
+t /= 2.;
+t += .5;
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+\section{Some Technical Details}
+
+
 
 \end{document}
