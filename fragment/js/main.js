@@ -44,7 +44,7 @@ var imagesrcs = [
     "ShakespeareHero.png",
     "ShakespeareJuliet.png",
     "ShakespeareKent.png",
-    "ShakespeareLady Macbeth.png",
+    "ShakespeareLadyMacbeth.png",
     "ShakespeareMacbeth.png",
     "ShakespeareRomeo.png",
     "ShakespeareYago.png",
