@@ -140,6 +140,8 @@ function start() {
     gl.depthFunc(gl.LEQUAL);
     // Clear the color as well as the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
     img = new Image('shaderText',[1.0,0.0,0.0,1.0]);
     img.setError(doError);
@@ -157,6 +159,8 @@ function start() {
     btn.addEventListener('click',function() { loadShader(); drawScene(); });
     btn = document.getElementById('reset');
     btn.addEventListener('click',function() {resetShaderText(); drawScene(); });
+    btn = document.getElementById('clear');
+    btn.addEventListener('click',function() {clearShaderText(); });
 
     btn = document.getElementById('imgload');
     btn.addEventListener('change',addImage);
@@ -230,6 +234,11 @@ function resetSize() {
 function resetShaderText() {
     var txt = document.getElementById('shaderText');
     txt.value = "lowp vec4 c = texture2D(texture, vTexcoord);\nc *= vColour;\n// Your code in here\ngl_FragColor = c;"
+}
+
+function clearShaderText() {
+    var txt = document.getElementById('shaderText');
+    txt.value = "";
 }
 
 function initWebGL(canvas) {
