@@ -197,9 +197,9 @@ function start() {
 }
 
 function initialise() {
+    resetSize();
     setTextures();
     setColours();
-    resetSize();
     img.initialise();
     window.addEventListener('resize',function() {resetSize(); drawScene();});
     drawScene();
@@ -266,6 +266,8 @@ function setTextures() {
 	sel = document.getElementById(textures[i]);
 	img.setTexture(i,textures[i],images[sel.value]);
     }
+    img.initShaders();
+    img.initBuffers();
 }
 
 function loadShader() {
@@ -344,6 +346,9 @@ function addTexture() {
 }
 
 function rmTexture() {
+    if (textures.length == 1) {
+	return;
+    }
     textures.pop();
     img.rmTexture();
     var tbl = document.getElementById('textable');
