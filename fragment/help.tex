@@ -6,6 +6,7 @@
 ]{internet}
 
 \imode<doc>{
+  \usepackage{tocstyle}
   \usepackage{amsmath}
   \usepackage{tcolorbox}
   \usepackage{tikz}
@@ -125,7 +126,7 @@ Replace the code in the box with the following:
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec4 c = vec4(1.,1.,1.,1.);
+lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
 gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
@@ -137,11 +138,11 @@ Some important things to note from this:
 \begin{enumerate}
 \item Every line ends with \verb+;+
 \item The last line will always be of the form \verb+gl_FragColor = ...+
-\item Whole numbers are written with a decimal point; e.g., \(1.\)
+\item Whole numbers are written as decimals; e.g., \(1.0\)
 \end{enumerate}
 
 Try changing the numbers in the first line to see what happens (remember that they must be between \(0\) and \(1\)).
-You must use a decimal point even if you use \(0\) or \(1\), so write these as \(0.\) and \(1.\) respectively.
+You must use a decimal point even if you use \(0\) or \(1\), so write these as \(0.0\) and \(1.0\) respectively.
 Vary one number at a time to see its effect.
 
 \begin{tcolorbox}
@@ -150,10 +151,10 @@ The word \verb+vec4+ says ``These four numbers should be used to specify a singl
 Writing
 %
 \begin{verbatim}
-lowp vec4 c = vec4(1.,1.,1.,1.);
+lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
 \end{verbatim}
 %
-says ``Use \verb+c+ as a label for a colour, and store in it the colour where each component is set to \(1.\)''.
+says ``Use \verb+c+ as a label for a colour, and store in it the colour where each component is set to \(1.0\)''.
 \end{tcolorbox}
 
 \subsection{Varying Colours}
@@ -185,9 +186,8 @@ Replace the code in the box with the following:
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec4 c = vec4(1.,1.,1.,1.);
-c *= vColour;
-gl_FragColor = c;
+lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
+gl_FragColor = vColour * c;
 \end{verbatim}
 \end{tcolorbox}
 
@@ -197,38 +197,44 @@ In this case, you can vary the numbers in the first line (you need to click \ver
 What happens here is that we have two colours: a base colour, \verb+c+, and the varying colour, \verb+vColour+.
 We can mix these colours in a variety of ways.
 The above code \emph{multiplies} the components of the colours so that the resulting red component is the result of multiplying the red component of the base colour by the red component of the varying colour.
-
-The syntax \verb+c *= vColour+ says to replace \verb+c+ by the result of this multiplication rather than making a new variable to store it in.
 \end{tcolorbox}
 
 Other ways of combining the colours are:
 %
 \begin{itemize}
-\item \verb!c += vColour;!
-\item \verb!c.rgb -= vColour.rgb;!
+\item \verb!vColour + c!
+\item \verb!vColour - c!
+\item \verb!vColour / c!
 
-Try \verb!c -= vColour! first.
-You should see just a white rectangle.
-This is because the transparency gets set to \(0\) and the effect of this is to make it blank.
-Adding the \verb+.rgb+ means ``Only apply this to the red, green, blue components and leave the transparency alone.''.
-
-\item \verb!c.rgb /= vColour.rgb;!
-
-We need the \verb!.rgb! for the same reason as above.
-Also, this works best when the first three numbers in the base colour are small.
-Try \verb!vec4(.1,.1,.1,1.)!
-\end{itemize}
-
-By using \verb!.rgb! you can vary the effect that the operations have.
-You can even vary the letters to produce more variety in your effects.
-The rules are:
-%
-\begin{itemize}
-\item The letters must be from \texttt+r+ (red), \texttt+g+ (green), \texttt+b+ (blue), and \texttt+a+ (alpha, aka transparency); repetitions are allowed on the right-hand side.
-\item The length of the letters must be \(1\), \(2\), \(3\), or \(4\) and must be the same on both sides.
+This works best when the first three numbers in the base colour are small.
+Try \verb!vec4(0.1,0.1,0.1,1.0)!
 \end{itemize}
 
 There are other, more sophisticated, methods of combining colours which we'll explore in later sections.
+
+\subsection{Colour Swapping}
+
+It is possible to access the components of a colour individually or in groups.
+Replace the code in the box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
+c.rgb = vColour.gbr;
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+To see the effect, change the corner colours.
+
+The \verb+r+, \verb+g+, and \verb+.b+ refer to the red, green, and blue components of the colours.
+There's a fourth one, \verb+a+, which refers to the transparency (known as the \emph{alpha}).
+The rules in using them are:
+%
+\begin{enumerate}
+\item The lengths must be the same.
+\item There can be repetitions on the right-hand side but not on the left-hand side.
+\end{enumerate}
 
 \subsection{Using a Picture}
 
@@ -262,51 +268,6 @@ These are packed together into \verb+vTexcoord+, in a similar fashion to a colou
 
 The coordinates are scaled so that the rectangle with the picture in has lower left corner at \((0,0)\) and upper right corner at \((1,1)\).
 
-\subsection{Modifying a Picture}
-\label{sec:modify}
-
-Replace the code in the text box with the following:
-
-\begin{tcolorbox}
-\begin{verbatim}
-lowp vec2 t = vTexcoord;
-t += vec2(.5,.5);
-lowp vec4 c = texture2D(texture, t);
-gl_FragColor = c;
-\end{verbatim}
-\end{tcolorbox}
-
-Just as \verb+vec4+ refers to a list of four numbers and is used to represent a colour, so \verb+vec2+ refers to a list of two numbers and is used to represent a position.
-
-The above adds \(.5\) to both the \(x\)--coordinates and \(y\)--coordinates of the look-up position.
-So at a point, say \((.2,.3)\), it actually looks at the colour on the image at \((.7,.8)\).
-This has the effect of moving the image down and to the left.
-
-What is worth noting here is what happens in the other quadrants.
-At, say, \((.7,.3)\) then the program is looking at \((1.2,.3)\).
-This is outside the picture, so what happens is the \(1.2\) gets replaced by \(1\) and it looks up the colour on the very edge of the picture.
-
-Similarly, a look-up at a negative co-ordinate gets replaced by a look-up on the lower edge of the picture.
-Later, we'll see how to fix this so that it wraps around.
-
-\subsection{Zooming In}
-
-Replace the code in the text box with the following:
-
-\begin{tcolorbox}
-\begin{verbatim}
-lowp vec2 t = vTexcoord;
-t -= vec2(.5,.5);
-t /= 2.;
-t += vec2(.5,.5);
-lowp vec4 c = texture2D(texture, t);
-gl_FragColor = c;
-\end{verbatim}
-\end{tcolorbox}
-
-How would you describe the effect of this?
-Try changing the numbers to see if your description is accurate (make sure that the two occurrences of \verb+vec2(.5,.5)+ stay the same as each other).
-
 \subsection{Mixing Colour and Texture}
 
 Press \verb+Reset+ so that the text box shows the following:
@@ -326,6 +287,53 @@ As before, you can use different operations like \verb!+=! or \verb!-=! and can 
 You can also use a fixed colour instead of \verb!vColour!.
 
 
+
+\subsection{Modifying a Picture}
+\label{sec:modify}
+
+Replace the code in the text box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t += vec2(0.5,0.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+Just as \verb+vec4+ refers to a list of four numbers and is used to represent a colour, so \verb+vec2+ refers to a list of two numbers and is used to represent a position.
+
+The above adds \(0.5\) to both the \(x\)--coordinates and \(y\)--coordinates of the look-up position.
+So at a point, say \((0.2,0.3)\), it actually looks at the colour on the image at \((0.7,0.8)\).
+This has the effect of moving the image down and to the left.
+
+What is worth noting here is what happens in the other quadrants.
+At, say, \((0.7,0.3)\) then the program is looking at \((1.2,0.3)\).
+This is outside the picture, so what happens is the \(1.2\) gets replaced by \(1\) and it looks up the colour on the very edge of the picture.
+
+Similarly, a look-up at a negative co-ordinate gets replaced by a look-up on the lower edge of the picture.
+Later, we'll see how to fix this so that it wraps around.
+
+\subsection{Zooming In}
+
+Replace the code in the text box with the following:
+
+\begin{tcolorbox}
+\begin{verbatim}
+lowp vec2 t = vTexcoord;
+t -= vec2(0.5,0.5);
+t /= 2.;
+t += vec2(0.5,0.5);
+lowp vec4 c = texture2D(texture, t);
+gl_FragColor = c;
+\end{verbatim}
+\end{tcolorbox}
+
+How would you describe the effect of this?
+Try changing the numbers to see if your description is accurate (make sure that the two occurrences of \verb+vec2(0.5,0.5)+ stay the same as each other).
+
+
 \section{Mathematics}
 \label{sec:maths}
 
@@ -338,7 +346,7 @@ There are also several functions that prove very useful in fragment programs.
 Click \verb+Add texture+ to get a second texture (which will be called \verb+texture1+).
 Choose two different images for the two textures.
 
-Replace the code in the text box with the following, make sure the \(1.\) in the last line has its decimal point:
+Replace the code in the text box with the following, make sure the \(1.0\) in the last line has its decimal point:
 
 \begin{tcolorbox}
 \begin{verbatim}
@@ -365,7 +373,7 @@ That is, on the left-hand edge the colour is from \verb+texture1+.
 On the right-hand edge, \verb+vTexcoord.x+ is equal to \(1\), whereupon it returns just \verb+c+.
 That is, on the right-hand edge the colour is from \verb+texture+.
 
-Half way across, \verb+vTexcoord.x+ is equal to \(.5\) and the \verb!mix! function mixes the two colours equally.
+Half way across, \verb+vTexcoord.x+ is equal to \(0.5\) and the \verb!mix! function mixes the two colours equally.
 Thus half way along, the colour is a perfect mix of the two pictures.
 \end{tcolorbox}
 
@@ -382,7 +390,7 @@ Make sure you have at least two textures, and replace the code in the text box w
 \begin{verbatim}
 lowp vec4 c = texture2D(texture, vTexcoord);
 lowp vec4 c1 = texture2D(texture1, vTexcoord);
-lowp float t = pow(vTexcoord.x,2.) * (3. * vTexcoord.x - 2.);
+lowp float t = pow(vTexcoord.x,2.0) * (3.0 * vTexcoord.x - 2.0);
 gl_FragColor = mix(c1,c,t);
 \end{verbatim}
 \end{tcolorbox}
@@ -411,7 +419,7 @@ The graph of this, for \(0 \le x \le 1\) is in Figure~\ref{fig:smoothstep}.
 \end{figure}
 
 In this code, we've seen how to write powers.
-The code \verb!pow(vTexcoord.x,2.)! squares the value of \verb!vTexcoord.x!.
+The code \verb!pow(vTexcoord.x,2.0)! squares the value of \verb!vTexcoord.x!.
 
 \subsection{Shifting a Picture}
 
@@ -420,7 +428,7 @@ In \ref{sec:modify}, we had the following code:
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t += vec2(.5,.5);
+t += vec2(0.5,0.5);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -433,7 +441,7 @@ To fix this, we can use the \verb!fract! function.
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t += vec2(.5,.5);
+t += vec2(0.5,0.5);
 t = fract(t);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
@@ -443,9 +451,9 @@ gl_FragColor = c;
 The \verb!fract! function throws away the whole number part of a number, leaving just the decimal part.
 
 \begin{align*}
-\fract(2.3) &= .3 \\
-\fract(1.7) &= .7 \\
-\fract(.5) &= .5
+\fract(2.3) &= 0.3 \\
+\fract(1.7) &= 0.7 \\
+\fract(0.5) &= 0.5
 \end{align*}
 
 Other useful functions for changing the texture coordinates (and colours) are:
@@ -466,7 +474,7 @@ Try the following:
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t -= vec2(.5,.5);
+t -= vec2(0.5,0.5);
 t = abs(t);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
@@ -476,7 +484,7 @@ gl_FragColor = c;
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t = min(vec2(.9,.9),t);
+t = min(vec2(0.9,0.9),t);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -485,7 +493,7 @@ gl_FragColor = c;
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t = max(vec2(.1,.1),t);
+t = max(vec2(0.1,0.1),t);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -494,7 +502,7 @@ gl_FragColor = c;
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec2 t = vTexcoord;
-t = clamp(t,vec2(.1,.1),vec2(.9,.9));
+t = clamp(t,vec2(0.1,0.1),vec2(0.9,0.9));
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -557,15 +565,6 @@ gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
 
-Again, we see the formula:
-%
-\[
-  (1 - t) a + t b
-  \]
-%
-occurring.
-This time, the \(t\) parameter is the alpha channel of the second image, while \(a\) and \(b\) are the red, green, and blue channels of the two images.
-
 If you try this with one of the characters, the result might look a little odd in that the character is distorted.
 This is because the second texture is stretched to fit the same size as the first.
 We can correct for this because the program tells the shader how big each image is: \verb+width+ and \verb+height+ are for the initial texture, then \verb+width1+ and \verb+height1+ for the texture \verb+texture1+ and so on. 
@@ -592,8 +591,8 @@ Recall that the texture coordinates are scaled so that the background image is o
 \begin{verbatim}
 lowp vec4 c = texture2D(texture, vTexcoord);
 lowp vec2 t = vTexcoord;
-t -= vec2(.5,.5);
-t /= 5.;
+t -= vec2(0.5,0.5);
+t /= 5.0;
 t.x *= width/width1;
 t.y *= height/height1;
 lowp vec4 c1 = texture2D(texture1, t);
@@ -611,15 +610,15 @@ Adding more characters is simply a matter of repeating the relevant code (in a f
 \begin{verbatim}
 lowp vec4 c = texture2D(texture, vTexcoord);
 lowp vec2 t = vTexcoord;
-t -= vec2(.5,.1);
-t /= 2.;
+t -= vec2(0.5,0.1);
+t /= 2.0;
 t.x *= width/width1;
 t.y *= height/height1;
 lowp vec4 c1 = texture2D(texture1, t);
 c.rgb = mix(c.rgb,c1.rgb,c1.a);
 lowp vec2 t2 = vTexcoord;
-t2 -= vec2(.6,.1);
-t2 /= 2.;
+t2 -= vec2(0.6,0.1);
+t2 /= 2.0;
 t2.x *= width/width2;
 t2.y *= height/height2;
 lowp vec4 c2 = texture2D(texture2, t2);
@@ -640,12 +639,12 @@ If you know about complex numbers, this one does \(z \mapsto z^2\).
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 lowp vec2 tx;
 tx.x = t.x * t.x - t.y * t.y;
-tx.y = 2. * t.x * t.y;
-tx /= 2.;
-tx += .5;
+tx.y = 2.0 * t.x * t.y;
+tx /= 2.0;
+tx += 0.5;
 lowp vec4 c = texture2D(texture, tx);
 gl_FragColor = c;
 \end{verbatim}
@@ -655,12 +654,12 @@ If you liked that one, try this:
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 lowp vec2 tx;
-tx.x = t.x * t.x * t.x - 3. * t.x * t.y * t.y;
-tx.y = 3. * t.x * t.x * t.y - t.y * t.y * t.y;
-tx /= 2.;
-tx += .5;
+tx.x = t.x * t.x * t.x - 3.0 * t.x * t.y * t.y;
+tx.y = 3.0 * t.x * t.x * t.y - t.y * t.y * t.y;
+tx /= 2.0;
+tx += 0.5;
 lowp vec4 c = texture2D(texture, tx);
 gl_FragColor = c;
 \end{verbatim}
@@ -675,36 +674,36 @@ First, a circular one.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = length(t);
 t /= r;
-r = pow(2.,-fract(-log2(r)));
+r = pow(2.0,-fract(-log2(r)));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += vec2(.5,.5);
+t /= 2.0;
+t += vec2(0.5,0.5);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
 
 To make it elliptical, with the aspect ratio of the picture, comment out the lines with \verb+width/height+ in them.
-To change the focus, change the \verb+vec2(.5,.5)+ to something like \verb+vec2(.3,.6)+ both in the first line and near the end.
+To change the focus, change the \verb+vec2(0.5,0.5)+ to something like \verb+vec2(0.3,0.6)+ both in the first line and near the end.
 
 Next, square.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = max(abs(t.x), abs(t.y));
 t /= r;
-r = pow(2.,-fract(-log2(r)));
+r = pow(2.0,-fract(-log2(r)));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += vec2(.5,.5);
+t /= 2.0;
+t += vec2(0.5,0.5);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -714,15 +713,15 @@ Or we could have a diamond.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - vec2(.5,.5))*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = abs(t.x) + abs(t.y);
 t /= r;
-r = pow(2.,-fract(-log2(r)));
+r = pow(2.0,-fract(-log2(r)));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += vec2(.5,.5);
+t /= 2.0;
+t += vec2(0.5,0.5);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -734,16 +733,16 @@ If you like the Droste effect, here's an Escherian spin on them.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = length(t);
-lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+lowp float th = atan(t.y,t.x)/6.28318530718;
 t /= r;
-r = pow(2.,-fract(-log2(r) + th));
+r = pow(2.0,-fract(-log2(r) + th));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += .5;
+t /= 2.0;
+t += vec2(0.5,0.5);
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -753,16 +752,16 @@ Now with squares.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = max(abs(t.x),abs(t.y));
-lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+lowp float th = atan(t.y,t.x)/6.28318530718;
 t /= r;
-r = pow(2.,-fract(-log2(r) + th));
+r = pow(2.0,-fract(-log2(r) + th));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += .5;
+t /= 2.0;
+t += 0.5;
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
@@ -773,16 +772,16 @@ And finally, with diamonds.
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec2 t = (vTexcoord - .5)*2.;
+lowp vec2 t = (vTexcoord - vec2(0.5,0.5))*2.0;
 t.x *= width/height;
 lowp float r = abs(t.x) + abs(t.y);
-lowp float th = atan(t.y,t.x)/6.28318530718 + .5;
+lowp float th = atan(t.y,t.x)/6.28318530718;
 t /= r;
-r = pow(2.,-fract(-log2(r) + th));
+r = pow(2.0,-fract(-log2(r) + th));
 t *= r;
 t.x /= width/height;
-t /= 2.;
-t += .5;
+t /= 2.0;
+t += 0.5;
 lowp vec4 c = texture2D(texture, t);
 gl_FragColor = c;
 \end{verbatim}
