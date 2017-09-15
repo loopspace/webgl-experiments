@@ -133,13 +133,19 @@ function start() {
 
 
     // Set clear color to black, fully opaque
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    var col = document.getElementById('bg').value;
+    var b = parseInt(col.substr(5,2),16)/255;
+    var g = parseInt(col.substr(3,2),16)/255;
+    var r = parseInt(col.substr(1,2),16)/255;
+    gl.clearColor(r,g,b, 1.0);
+    //gl.clearColor(0.0, 0.0, 0.0, 1.0);
     // Enable depth testing
     gl.enable(gl.DEPTH_TEST);
     // Near things obscure far things
     gl.depthFunc(gl.LEQUAL);
     // Clear the color as well as the depth buffer.
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    // Enable blending so that alpha works as expected
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
@@ -179,6 +185,10 @@ function start() {
 	col.addEventListener('change',function() {setColours(); drawScene();});
     }
 
+    col = document.getElementById('bg');
+    col.addEventListener('change',function() {setBackground(); drawScene();});
+    
+    
     var sel;
     for (var i = 0; i < textures.length; i++) {
 	sel = document.getElementById(textures[i]);
@@ -267,6 +277,14 @@ function setColours() {
 	ncols.push([r,g,b,1]);
     }
     img.setColours(ncols);
+}
+
+function setBackground() {
+    var col = document.getElementById('bg').value;
+    var b = parseInt(col.substr(5,2),16)/255;
+    var g = parseInt(col.substr(3,2),16)/255;
+    var r = parseInt(col.substr(1,2),16)/255;
+    gl.clearColor(r,g,b, 1.0);
 }
 
 function setTextures() {
