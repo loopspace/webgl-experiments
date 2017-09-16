@@ -40,7 +40,7 @@
     background-color: #f5f5dc;
     border-radius: 5px;
     border-color: #f50000;
-    white-space: pre;
+    white-space: pre-wrap;
     padding: 10px;
     color: #f50000;
     display: none;
@@ -65,4 +65,22 @@
 
 #imgsrc {
     font-size: 70%;
+}
+
+span.button {
+    -webkit-appearance: button;
+    -moz-appearance: button;
+    appearance: button;
+}
+
+a.button {
+    text-decoration: none;
+    color: initial;
+    font-size: 67%;
+    font-family: "Geneva";
+    padding: 7px;
+}    
+
+button {
+    font-family: "Geneva";
 }

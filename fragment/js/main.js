@@ -167,6 +167,8 @@ function start() {
     btn.addEventListener('click',function() {resetShaderText(); drawScene(); });
     btn = document.getElementById('clear');
     btn.addEventListener('click',function() {clearShaderText(); });
+    btn = document.getElementById('save');
+    btn.addEventListener('click',function() {saveImage(); });
 
     btn = document.getElementById('imgload');
     btn.addEventListener('change',addImage);
@@ -251,6 +253,10 @@ function clearShaderText() {
     txt.value = "";
 }
 
+function saveImage() {
+
+}
+
 function initWebGL(canvas) {
     gl = null;
   
@@ -317,7 +323,15 @@ function drawScene(timestamp) {
     mvScale([aspect,aspect,1]);
     img.draw();
     popMatrix();
-//    window.requestAnimationFrame(drawScene);
+    //    window.requestAnimationFrame(drawScene);
+
+    var canvas = document.getElementById('glCanvas');
+    var a = document.getElementById('save');
+    canvas.toBlob(function(b) {
+        a.href = window.URL.createObjectURL(b);
+        a.download = 'image.png';
+    });
+
 }
 
 function addImage() {
