@@ -163,7 +163,7 @@ Replace the code in the box with the following:
 
 \begin{tcolorbox}
 \begin{verbatim}
-lowp vec4 c = vColour;
+lowp vec4 c = vColor;
 gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
@@ -173,11 +173,13 @@ Click \verb+Reload+ to see what this does.
 Try changing the corner colours to see their effect (the image should automatically update when these colours are changed).
 
 \begin{tcolorbox}
-The special word \verb+vColour+ defines a colour that varies over the rectangle.
+The special word \verb+vColor+ defines a colour that varies over the rectangle.
 It is as if a blob of each of the corner colours has been placed at their respective corner and then blended into the rectangle.
 
 Some combinations of colour will result in a definite line from top left to bottom right.
-This shows that the rectangle is actually made up of two triangles and the blending of the colours is done by the triangles rather than the rectangle.  
+This shows that the rectangle is actually made up of two triangles and the blending of the colours is done by the triangles rather than the rectangle.
+
+Note that although the author of this website is British, the underlying WebGL framework uses American spelling and so to avoid confusion we use \verb+vColor+.
 \end{tcolorbox}
 
 \subsection{Blending}
@@ -187,14 +189,14 @@ Replace the code in the box with the following:
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
-gl_FragColor = vColour * c;
+gl_FragColor = vColor * c;
 \end{verbatim}
 \end{tcolorbox}
 
 In this case, you can vary the numbers in the first line (you need to click \verb+Reload+ when you do) and the corner colours.
 
 \begin{tcolorbox}
-What happens here is that we have two colours: a base colour, \verb+c+, and the varying colour, \verb+vColour+.
+What happens here is that we have two colours: a base colour, \verb+c+, and the varying colour, \verb+vColor+.
 We can mix these colours in a variety of ways.
 The above code \emph{multiplies} the components of the colours so that the resulting red component is the result of multiplying the red component of the base colour by the red component of the varying colour.
 \end{tcolorbox}
@@ -202,9 +204,9 @@ The above code \emph{multiplies} the components of the colours so that the resul
 Other ways of combining the colours are:
 %
 \begin{itemize}
-\item \verb!vColour + c!
-\item \verb!vColour - c!
-\item \verb!vColour / c!
+\item \verb!vColor + c!
+\item \verb!vColor - c!
+\item \verb!vColor / c!
 
 This works best when the first three numbers in the base colour are small.
 Try \verb!vec4(0.1,0.1,0.1,1.0)!
@@ -220,7 +222,7 @@ Replace the code in the box with the following:
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec4 c = vec4(1.0,1.0,1.0,1.0);
-c.rgb = vColour.gbr;
+c.rgb = vColor.gbr;
 gl_FragColor = c;
 \end{verbatim}
 \end{tcolorbox}
@@ -275,7 +277,7 @@ Press \verb+Reset+ so that the text box shows the following:
 \begin{tcolorbox}
 \begin{verbatim}
 lowp vec4 c = texture2D(texture, vTexcoord);
-c *= vColour;
+c *= vColor;
 // Your code in here
 gl_FragColor = c;
 \end{verbatim}
@@ -284,7 +286,7 @@ gl_FragColor = c;
 Click \verb+Reload+ to see what this does.
 
 As before, you can use different operations like \verb!+=! or \verb!-=! and can use \verb!.rgb!.
-You can also use a fixed colour instead of \verb!vColour!.
+You can also use a fixed colour instead of \verb!vColor!.
 
 
 

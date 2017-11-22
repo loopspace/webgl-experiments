@@ -7,6 +7,9 @@ var start;
 
 var img;
 
+var start;
+var animating;
+
 // Matrix stack
 var matrixStack = [];
 
@@ -16,6 +19,7 @@ var perspectiveMatrix;
 // Images
 var imagesrcs = [
     "circles.png",
+    "ColourGradient.png",
     "100_3780.jpg",
     "100_3781.jpg",
     "100_4087.jpg",
@@ -179,6 +183,13 @@ function start() {
 
     btn = document.getElementById('rmtex');
     btn.addEventListener('click',function() {rmTexture(); setTextures(); loadShader(); });
+
+    var chbx = document.getElementById('animating');
+    chbx.addEventListener('change',function(e) {
+	animating = e.target.checked;
+	drawScene();
+    });
+    animating = chbx.checked;
     
     var cols = ['ul','ur','bl','br'];
     var col;
@@ -197,6 +208,7 @@ function start() {
 	sel.addEventListener('change',function() {setTextures(); drawScene();});
     }
 
+    // Preload all the images for faster rendering
     var loaded = 0;
     var imgdiv = document.getElementById('images');
     for (var i = 0; i < imagesrcs.length; i++) {
@@ -209,6 +221,12 @@ function start() {
 		initialise();
 	    }
 	});
+    }
+
+    // Iterate through the image selector to add the values
+    var imglist = document.getElementById('texture');
+    for (var i = 0; i < imglist.options.length; i++) {
+	imglist.options[i].value = i;
     }
 }
 
@@ -245,7 +263,7 @@ function resetSize() {
 
 function resetShaderText() {
     var txt = document.getElementById('shaderText');
-    txt.value = "lowp vec4 c = texture2D(texture, vTexcoord);\nc *= vColour;\n// Your code in here\ngl_FragColor = c;"
+    txt.value = "lowp vec4 c = texture2D(texture, vTexcoord);\nc *= vColor;\n// Your code in here\ngl_FragColor = c;"
 }
 
 function clearShaderText() {
@@ -311,7 +329,16 @@ function loadShader() {
     img.reloadShader();
 }
 
-function drawScene(timestamp) {
+function drawScene() {
+    img.setup();
+    start = null;
+    window.requestAnimationFrame(drawSceneAux);
+}
+
+function drawSceneAux(timestamp) {
+    if (!start) start = timestamp;
+    var dt = (timestamp - start)/1000;
+
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
@@ -321,17 +348,23 @@ function drawScene(timestamp) {
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
     mvScale([aspect,aspect,1]);
-    img.draw();
+    img.draw(dt);
     popMatrix();
-    //    window.requestAnimationFrame(drawScene);
+    
+    if (animating) {
+	window.requestAnimationFrame(drawSceneAux);
+    } else {
+	setDownloadImage();
+    }
+}
 
+function setDownloadImage() {
     var canvas = document.getElementById('glCanvas');
     var a = document.getElementById('save');
     canvas.toBlob(function(b) {
         a.href = window.URL.createObjectURL(b);
         a.download = 'image.png';
     });
-
 }
 
 function addImage() {

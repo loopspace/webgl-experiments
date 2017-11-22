@@ -55,8 +55,8 @@ Image.prototype.initShaders = function() {
     this.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'vertexPosition');
     gl.enableVertexAttribArray(this.vertexPositionAttribute);
     
-    this.vertexColourAttribute = gl.getAttribLocation(shaderProgram, 'vertexColour');
-    gl.enableVertexAttribArray(this.vertexColourAttribute);
+    this.vertexColorAttribute = gl.getAttribLocation(shaderProgram, 'vertexColor');
+    gl.enableVertexAttribArray(this.vertexColorAttribute);
 
     this.vertexCoordinateAttribute = gl.getAttribLocation(shaderProgram, 'textureCoordinate');
     gl.enableVertexAttribArray(this.vertexCoordinateAttribute);
@@ -90,7 +90,7 @@ Image.prototype.initBuffers = function() {
     gl.useProgram(this.shaderProgram);
     
     this.squareVerticesBuffer = gl.createBuffer();
-    this.squareVerticesColourBuffer = gl.createBuffer();    
+    this.squareVerticesColorBuffer = gl.createBuffer();    
     this.squareVerticesCoordinateBuffer = gl.createBuffer();
 
     for (var i = 0; i < this.textures.length; i++) {
@@ -100,9 +100,9 @@ Image.prototype.initBuffers = function() {
     }
 //    this.texture = gl.createTexture();
 
-    this.vertexColourAttribute = gl.getAttribLocation(this.shaderProgram, 'vertexColour');
+    this.vertexColorAttribute = gl.getAttribLocation(this.shaderProgram, 'vertexColor');
     this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'textureCoordinate');
-//    this.colourUniform = gl.getUniformLocation(this.shaderProgram,'colour');
+    this.deltaTimeUniform = gl.getUniformLocation(this.shaderProgram,'DeltaTime');
 
 }
 
@@ -134,8 +134,8 @@ Image.prototype.doBindings = function() {
     gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
 
 
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesColourBuffer);
-    gl.vertexAttribPointer(this.vertexColourAttribute, 4, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesColorBuffer);
+    gl.vertexAttribPointer(this.vertexColorAttribute, 4, gl.FLOAT, false, 0, 0);
     gl.bufferData(gl.ARRAY_BUFFER, this.colours, gl.DYNAMIC_DRAW);
 
     gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesCoordinateBuffer);
@@ -145,7 +145,8 @@ Image.prototype.doBindings = function() {
     for (var i = 0; i < this.textures.length; i++) {
 	this.bindTexture(i);
     }
-    
+
+    gl.uniform1f(this.deltaTimeUniform,.5);
 //    gl.uniform4fv(this.colourUniform,this.colour);
 
 }
@@ -172,11 +173,15 @@ Image.prototype.bindTexture = function(i) {
     gl.uniform1f(this.textures[i].height,h);    
 }
 
+Image.prototype.updateTime = function(dt) {
+    gl.uniform1f(this.deltaTimeUniform,dt);    
+}
+
 Image.prototype.enableProgram = function() {
     gl.useProgram(this.shaderProgram);
 
     gl.enableVertexAttribArray(this.vertexPositionAttribute);    
-    gl.enableVertexAttribArray(this.vertexColourAttribute);
+    gl.enableVertexAttribArray(this.vertexColorAttribute);
     gl.enableVertexAttribArray(this.vertexCoordinateAttribute);
     
 }
@@ -187,12 +192,16 @@ Image.prototype.reloadShader = function() {
     this.initBuffers();
 }
 
-Image.prototype.draw = function(m) {
+Image.prototype.setup = function() {
     this.enableProgram();
     this.doBindings();
     if (!this.valid) {
 	return null;
     }
+}
+
+Image.prototype.draw = function(dt) {
+    this.updateTime(dt);
     setMatrixUniforms(this.shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
