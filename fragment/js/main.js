@@ -118,6 +118,12 @@ function start() {
 	return;
     }
 
+    // Iterate through the image selector to add the values
+    var imglist = document.getElementById('texture');
+    for (var i = 0; i < imglist.options.length; i++) {
+	imglist.options[i].value = i;
+    }
+    
     var shtxt = localStorage.getItem('shader');
     if (shtxt) {
 	var shader = document.getElementById('shaderText');
@@ -221,12 +227,6 @@ function start() {
 		initialise();
 	    }
 	});
-    }
-
-    // Iterate through the image selector to add the values
-    var imglist = document.getElementById('texture');
-    for (var i = 0; i < imglist.options.length; i++) {
-	imglist.options[i].value = i;
     }
 }
 
