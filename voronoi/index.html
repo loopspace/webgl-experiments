@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>webgl Experiments: Voronoi Diagrams</title>
+    <script src="../utilities/sylvester.js"></script>
+    <script src="../utilities/glUtils.js"></script>
+    <script src="voronoi.js"></script>
+    <script src="main.js"></script>
+    <link href="voronoi.css" rel="stylesheet">
+    <script id="shader-fs" type="x-shader/x-fragment">
+      //The interpolated coordinate for this fragment
+      varying highp vec2 vCoordinate;
+
+      uniform lowp vec2 pts[16];
+      //uniform lowp vec3 params[16];
+
+      lowp vec3 hsl2rgb( lowp vec3 c )
+      {
+      lowp vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
+      return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
+      }
+      
+void main()
+{
+    lowp float d = 2.;
+    lowp float dd;
+    lowp float p = 0.;
+    lowp float s;
+    for (int i = 0; i < 16; i++) {
+        dd = distance(vCoordinate,pts[i]);
+        s = step(d,dd);
+        p = (1.-s)*(float (i)) + s*p;
+        d = s*d + (1.-s)*dd;
+    }
+    lowp float l = .5;
+    s = step(.01,d);
+    l = s*.5 + (1. - s)*1.;
+    //Sample the texture at the interpolated coordinate
+    lowp vec4 col = vec4(hsl2rgb(vec3(p/16.,1.,l)),1.);
+
+    //Set the output color to the texture color
+    gl_FragColor = col;
+}
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute vec3 aVertexPosition;
+      attribute vec2 aVertexCoordinate;
+    
+      uniform mat4 uMVMatrix;
+      uniform mat4 uPMatrix;
+      
+      varying highp vec2 vCoordinate;
+    
+      void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vCoordinate = aVertexCoordinate;
+      }
+    </script>
+  </head>
+  <body onload="start()">
+    <canvas id="glCanvas" width="640" height="480">
+      Your browser doesn't appear to support the 
+      <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    <div id="info">
+      <table>
+	<tr>
+	  <th>Voronoi</th>
+	  <th colspan="2">Viewport</th>
+	  <th>Centre</th>
+	</tr>
+	<tr>
+	  <td>Mandelbrot</td>
+	  <td id="mandel_ll"></td>
+	  <td id="mandel_ur"></td>
+	  <td id="mandel_ce"></td>
+	</tr>
+	<tr>
+	  <td>Julia</td>
+	  <td id="julia_ll"></td>
+	  <td id="julia_ur"></td>
+	  <td id="julia_ce"></td>
+	</tr>
+      </table>
+      <form id="showDetails">
+	<button type="button" id="showButton">Update details</button>
+      </form>
+    </div>
+    <div id="instructions">
+      <ul>
+	<li>Scroll to zoom in/out
+	<li>Click to reset zoom
+	<li>Click-drag to move
+      </ul>
+    </div>
+  </body>
+</html>
