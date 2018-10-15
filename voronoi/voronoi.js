@@ -25,6 +25,39 @@ function Voronoi() {
 	0.8,0.6,
 	0.8,0.8,
     ]);
+    var params = [];
+    for (var i = 0; i < 16; i++) {
+	params.push(1+Math.random())
+	params.push(Math.random())
+	params.push(1+Math.random())
+    }
+    this.params = new Float32Array(params);
+    var dblparams = [];
+    for (var i = 0; i < 16; i++) {
+	dblparams.push(1);
+	dblparams.push(0);
+	dblparams.push(1);
+    }
+    this.dblparams = new Float32Array(dblparams);
+    this.dblpoints = new Float32Array([
+	0.25,0.5,
+	0.75,0.5,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+	0.0,0.0,
+    ]);
+    this.numpoints = 2;
     this.initShaders();
     this.initBuffers();
 }
@@ -74,6 +107,8 @@ Voronoi.prototype.initBuffers = function() {
 
 //    this.parameterUniform = gl.getUniformLocation(this.shaderProgram,'params');
     this.pointsUniform = gl.getUniformLocation(this.shaderProgram,'pts');
+    this.paramsUniform = gl.getUniformLocation(this.shaderProgram,'params');
+    this.numPointsUniform = gl.getUniformLocation(this.shaderProgram,'np');
 }
 
 Voronoi.prototype.doBindings = function() {
@@ -86,8 +121,15 @@ Voronoi.prototype.doBindings = function() {
     gl.vertexAttribPointer(this.vertexCoordinateAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
     
-//    gl.uniform2fv(this.parameterUniform, this.parameters);
-    gl.uniform2fv(this.pointsUniform, this.points);
+    //    gl.uniform2fv(this.parameterUniform, this.parameters);
+    if (this.numpoints == 2) {
+	gl.uniform2fv(this.pointsUniform, this.dblpoints);
+	gl.uniform3fv(this.paramsUniform, this.dblparams);
+    } else {
+	gl.uniform2fv(this.pointsUniform, this.points);
+	gl.uniform3fv(this.paramsUniform, this.params);
+    }
+    gl.uniform1f(this.numPointsUniform, this.numpoints);
 }
 
 Voronoi.prototype.enableProgram = function() {
@@ -106,6 +148,42 @@ Voronoi.prototype.draw = function(m) {
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
+}
+
+Voronoi.prototype.setType = function(b) {
+    if (b) {
+	this.numpoints = 16;
+    } else {
+	this.numpoints = 2;
+    }
+}
+
+Voronoi.prototype.setParams = function(a,b,c) {
+    a = parseFloat(a);
+    if (isNaN(a)) {
+	a = 1;
+    }
+    b = parseFloat(b);
+    if (isNaN(b)) {
+	b = 0;
+    }
+    c = parseFloat(c);
+    if (isNaN(c)) {
+	c = 1;
+    }
+    this.dblparams[3] = parseFloat(a);
+    this.dblparams[4] = parseFloat(b);
+    this.dblparams[5] = parseFloat(c);
+}
+
+Voronoi.prototype.regenerate = function() {
+    var params = [];
+    for (var i = 0; i < 16; i++) {
+	params.push(1+Math.random())
+	params.push(Math.random())
+	params.push(1+Math.random())
+    }
+    this.params = new Float32Array(params);
 }
 
 Voronoi.prototype.setParameter = function(c) {

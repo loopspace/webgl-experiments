@@ -63,7 +63,23 @@ function start() {
     
     window.addEventListener('resize',resetSize);
 
-    var btn = document.getElementById('showButton');
+    var chkbx = document.getElementById('npts');
+    chkbx.addEventListener('change', setVoronoiType);
+    setVoronoiTypeAux(chkbx);
+    var a,b,c,elt;
+    elt = document.getElementById('wgt');
+    a = elt.value;
+    elt.addEventListener('change', setVoronoiParams);
+    elt = document.getElementById('dis');
+    b = elt.value;
+    elt.addEventListener('change', setVoronoiParams);
+    elt = document.getElementById('qnt');
+    c = elt.value;
+    elt.addEventListener('change', setVoronoiParams);
+    
+    elt = document.getElementById('regenerate');
+    elt.addEventListener('click', regenVoronoi);
+    
     //btn.addEventListener('click',showParameters);
     //showParameters();
 }
@@ -101,6 +117,48 @@ function initWebGL(canvas) {
     }
   
     return gl;
+}
+
+function setVoronoiType(e) {
+    setVoronoiTypeAux(e.target);
+}
+
+function setVoronoiTypeAux(e) {
+    var ipt;
+    if (e.checked) {
+	voronoi.setType(true);
+	document.getElementById('wgt').disabled = true;
+	document.getElementById('dis').disabled = true;
+	document.getElementById('qnt').disabled = true;
+	document.getElementById('regenerate').disabled = false;
+    } else {
+	voronoi.setType(false);
+	document.getElementById('wgt').disabled = false;
+	document.getElementById('dis').disabled = false;
+	document.getElementById('qnt').disabled = false;
+	document.getElementById('regenerate').disabled = true;
+    }
+    drawScene();
+}
+
+function setVoronoiParams(e) {
+    var elt, a,b,c;
+    elt = document.getElementById('wgt');
+    a = elt.value;
+
+    elt = document.getElementById('dis');
+    b = elt.value;
+
+    elt = document.getElementById('qnt');
+    c = elt.value;
+
+    voronoi.setParams(a,b,c);
+    drawScene();
+}    
+
+function regenVoronoi(e) {
+    voronoi.regenerate();
+    drawScene();
 }
 
 function showParameters() {

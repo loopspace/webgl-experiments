@@ -13,7 +13,8 @@
       varying highp vec2 vCoordinate;
 
       uniform lowp vec2 pts[16];
-      //uniform lowp vec3 params[16];
+      uniform mediump float np;
+      uniform lowp vec3 params[16];
 
       lowp vec3 hsl2rgb( lowp vec3 c )
       {
@@ -24,14 +25,21 @@
 void main()
 {
     lowp float d = 2.;
-    lowp float dd;
+      lowp float dd;
+      lowp float a = 2.;
+      lowp float ad;
     lowp float p = 0.;
-    lowp float s;
+      lowp float s;
+      lowp float t;
+
     for (int i = 0; i < 16; i++) {
-        dd = distance(vCoordinate,pts[i]);
-        s = step(d,dd);
+	dd = distance(vCoordinate,pts[i]);
+	ad = params[i].x * dd + params[i].y;		
+	s = 1. - (1. - step(a,ad)) * (1. - step(np,float(i)));
+	t = 1. - (1. - step(d,dd)) * (1. - step(np,float(i)));
         p = (1.-s)*(float (i)) + s*p;
-        d = s*d + (1.-s)*dd;
+        a = s*a + (1.-s)*ad;
+        d = t*d + (1.-t)*dd;
     }
     lowp float l = .5;
     s = step(.01,d);
@@ -64,34 +72,40 @@ void main()
       <code>&lt;canvas&gt;</code> element.
     </canvas>
     <div id="info">
+      <form id="vform"></form>
       <table>
 	<tr>
-	  <th>Voronoi</th>
-	  <th colspan="2">Viewport</th>
-	  <th>Centre</th>
+	  <th colspan="3">Voronoi Configuration</th>
 	</tr>
 	<tr>
-	  <td>Mandelbrot</td>
-	  <td id="mandel_ll"></td>
-	  <td id="mandel_ur"></td>
-	  <td id="mandel_ce"></td>
+	  <td>Multiple</td>
+	  <td id="npoints"><input type="checkbox" id="npts" form="vform"></td>
 	</tr>
 	<tr>
-	  <td>Julia</td>
-	  <td id="julia_ll"></td>
-	  <td id="julia_ur"></td>
-	  <td id="julia_ce"></td>
+	  <td colspan="2">Parameters</td>
+	</tr>
+	<tr>
+	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math></td>
+	  <td><input type="text" id="wgt" form="vform"></td>
+	</tr>
+	<tr>
+	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math></td>
+	  <td><input type="text" id="dis" form="vform"></td>
+	</tr>
+	<tr>
+	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math></td>
+	  <td><input type="text" id="qnt" form="vform"></td>
+	</tr>
+	<tr>
+	  <td colspan="2">
+	    <button type="button" id="regenerate">Regenerate Parameters</button>
+	  </td>
 	</tr>
       </table>
-      <form id="showDetails">
-	<button type="button" id="showButton">Update details</button>
-      </form>
     </div>
     <div id="instructions">
       <ul>
-	<li>Scroll to zoom in/out
-	<li>Click to reset zoom
-	<li>Click-drag to move
+	<li>Click to drag points
       </ul>
     </div>
   </body>
