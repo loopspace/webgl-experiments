@@ -58,6 +58,8 @@ function Voronoi() {
 	0.0,0.0,
     ]);
     this.numpoints = 2;
+    this.useWeights = false;
+    this.useDelays = false;
     this.initShaders();
     this.initBuffers();
 }
@@ -109,6 +111,8 @@ Voronoi.prototype.initBuffers = function() {
     this.pointsUniform = gl.getUniformLocation(this.shaderProgram,'pts');
     this.paramsUniform = gl.getUniformLocation(this.shaderProgram,'params');
     this.numPointsUniform = gl.getUniformLocation(this.shaderProgram,'np');
+    this.useWeightsUniform = gl.getUniformLocation(this.shaderProgram,'wgts');
+    this.useDelayUniform = gl.getUniformLocation(this.shaderProgram,'dlys');
 }
 
 Voronoi.prototype.doBindings = function() {
@@ -125,11 +129,24 @@ Voronoi.prototype.doBindings = function() {
     if (this.numpoints == 2) {
 	gl.uniform2fv(this.pointsUniform, this.dblpoints);
 	gl.uniform3fv(this.paramsUniform, this.dblparams);
+	gl.uniform1f(this.useDelayUniform, 1);
+	gl.uniform1f(this.useWeightsUniform, 1);
     } else {
 	gl.uniform2fv(this.pointsUniform, this.points);
 	gl.uniform3fv(this.paramsUniform, this.params);
+	if (this.useWeights) {
+	    gl.uniform1f(this.useWeightsUniform, 1);
+	} else {
+	    gl.uniform1f(this.useWeightsUniform, 0);
+	}
+	if (this.useDelays) {
+	    gl.uniform1f(this.useDelayUniform, 1);
+	} else {
+	    gl.uniform1f(this.useDelayUniform, 0);
+	}
     }
     gl.uniform1f(this.numPointsUniform, this.numpoints);
+
 }
 
 Voronoi.prototype.enableProgram = function() {
@@ -158,7 +175,7 @@ Voronoi.prototype.setType = function(b) {
     }
 }
 
-Voronoi.prototype.setParams = function(a,b,c) {
+Voronoi.prototype.setParams = function(a,b,c,d) {
     a = parseFloat(a);
     if (isNaN(a)) {
 	a = 1;
@@ -167,13 +184,17 @@ Voronoi.prototype.setParams = function(a,b,c) {
     if (isNaN(b)) {
 	b = 0;
     }
+    /*
     c = parseFloat(c);
     if (isNaN(c)) {
 	c = 1;
     }
+    */
     this.dblparams[3] = parseFloat(a);
     this.dblparams[4] = parseFloat(b);
-    this.dblparams[5] = parseFloat(c);
+    //    this.dblparams[5] = parseFloat(c);
+    this.useWeights = c;
+    this.useDelays = d;
 }
 
 Voronoi.prototype.regenerate = function() {

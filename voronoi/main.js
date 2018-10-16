@@ -73,15 +73,42 @@ function start() {
     elt = document.getElementById('dis');
     b = elt.value;
     elt.addEventListener('change', setVoronoiParams);
-    elt = document.getElementById('qnt');
-    c = elt.value;
+
+    elt = document.getElementById('wgts');
     elt.addEventListener('change', setVoronoiParams);
+    elt = document.getElementById('dlys');
+    elt.addEventListener('change', setVoronoiParams);
+
+    setVoronoiParams();
+//    elt = document.getElementById('qnt');
+//    c = elt.value;
+//    elt.addEventListener('change', setVoronoiParams);
     
     elt = document.getElementById('regenerate');
     elt.addEventListener('click', regenVoronoi);
     
     //btn.addEventListener('click',showParameters);
     //showParameters();
+    /*
+      Make the question mark toggle the help pane
+     */
+    var hlnk = document.getElementById('helplink');
+    var hdv = document.getElementById('help');
+    hlnk.addEventListener('click', function(e) {
+        e.preventDefault();
+        if (hdv.style.display == 'none' || hdv.style.display == '') {
+            hdv.style.display = 'block';
+        } else {
+            hdv.style.display = 'none';
+        }
+        return false;
+    });
+    /*
+      Set the help pane height to the window height,
+      Should probably update on resize
+     */
+    var h = window.innerHeight - 20;
+    hdv.style.height = h + 'px';
 }
 
 function resetSize() {
@@ -127,32 +154,33 @@ function setVoronoiTypeAux(e) {
     var ipt;
     if (e.checked) {
 	voronoi.setType(true);
-	document.getElementById('wgt').disabled = true;
-	document.getElementById('dis').disabled = true;
-	document.getElementById('qnt').disabled = true;
-	document.getElementById('regenerate').disabled = false;
+	document.getElementById('singleparam').style.display = 'none';
+	document.getElementById('multipleparam').style.display = 'table-row-group';
     } else {
 	voronoi.setType(false);
-	document.getElementById('wgt').disabled = false;
-	document.getElementById('dis').disabled = false;
-	document.getElementById('qnt').disabled = false;
-	document.getElementById('regenerate').disabled = true;
+	document.getElementById('singleparam').style.display = 'table-row-group';
+	document.getElementById('multipleparam').style.display = 'none';
     }
     drawScene();
 }
 
 function setVoronoiParams(e) {
-    var elt, a,b,c;
+    var elt, a,b,c,d;
     elt = document.getElementById('wgt');
     a = elt.value;
 
     elt = document.getElementById('dis');
     b = elt.value;
 
-    elt = document.getElementById('qnt');
-    c = elt.value;
+    elt = document.getElementById('wgts');
+    c = elt.checked;
 
-    voronoi.setParams(a,b,c);
+    elt = document.getElementById('dlys');
+    d = elt.checked;
+//    elt = document.getElementById('qnt');
+//    c = elt.value;
+
+    voronoi.setParams(a,b,c,d);
     drawScene();
 }    
 

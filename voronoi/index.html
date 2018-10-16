@@ -15,6 +15,8 @@
       uniform lowp vec2 pts[16];
       uniform mediump float np;
       uniform lowp vec3 params[16];
+      uniform lowp float wgts;
+      uniform lowp float dlys;
 
       lowp vec3 hsl2rgb( lowp vec3 c )
       {
@@ -34,7 +36,7 @@ void main()
 
     for (int i = 0; i < 16; i++) {
 	dd = distance(vCoordinate,pts[i]);
-	ad = params[i].x * dd + params[i].y;		
+	ad = (1. + wgts * (params[i].x - 1.)) * dd + dlys * params[i].y;
 	s = 1. - (1. - step(a,ad)) * (1. - step(np,float(i)));
 	t = 1. - (1. - step(d,dd)) * (1. - step(np,float(i)));
         p = (1.-s)*(float (i)) + s*p;
@@ -75,38 +77,100 @@ void main()
       <form id="vform"></form>
       <table>
 	<tr>
-	  <th colspan="3">Voronoi Configuration</th>
+	  <th colspan="2">Voronoi Configuration</th>
 	</tr>
 	<tr>
 	  <td>Multiple</td>
 	  <td id="npoints"><input type="checkbox" id="npts" form="vform"></td>
 	</tr>
 	<tr>
-	  <td colspan="2">Parameters</td>
+	  <td>Parameters</td><td></td>
+	</tr>
+	<tbody id="singleparam">
+	  <tr>
+	    <td class="rightalign">
+	      <math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a x + b</annotation></semantics></math>
+	    </td>
+	  </tr>
+	<tr>
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math>:</td>
+	  <td><input type="text" id="wgt" form="vform" class="smallinput"></td>
 	</tr>
 	<tr>
-	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math></td>
-	  <td><input type="text" id="wgt" form="vform"></td>
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math>:</td>
+	  <td><input type="text" id="dis" form="vform" class="smallinput"></td>
 	</tr>
-	<tr>
-	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math></td>
-	  <td><input type="text" id="dis" form="vform"></td>
-	</tr>
-	<tr>
+<!--	<tr>
 	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math></td>
 	  <td><input type="text" id="qnt" form="vform"></td>
-	</tr>
-	<tr>
-	  <td colspan="2">
-	    <button type="button" id="regenerate">Regenerate Parameters</button>
-	  </td>
-	</tr>
+</tr> -->
+	</tbody>
+	<tbody id="multipleparam">
+	  <tr>
+	    <td>
+	      Use Weights
+	    </td>
+	    <td>
+	      <input type="checkbox" id="wgts">
+	    </td>
+	  </tr>
+	  <tr>
+	    <td>
+	      Use Delays
+	    </td>
+	    <td>
+	      <input type="checkbox" id="dlys">
+	    </td>
+	  </tr>
+	  <tr>
+	    <td colspan="2">
+	      <button type="button" id="regenerate">Regenerate Parameters</button>
+	    </td>
+	  </tr>
+	</tbody>
       </table>
     </div>
-    <div id="instructions">
-      <ul>
-	<li>Click to drag points
-      </ul>
+    <div id="help" class="help">
+      <h3>Voronoi Explorer</h3>
+      <p>
+	This page allows you to explore generalised Voronoi diagrams.
+      </p>
+      <p>
+	There are two main modes:
+      </p>
+	<ul>
+	  <li><span class="mode">Multiple points</span>: in this mode,
+	  there are 16 points which can be dragged around.  The
+	    parameters are set at random.
+	  <li><span class="mode">Double points</span>: in this mode,
+	  there are 2 points which are at fixed locations.  The
+	    parameters can be set manually.
+	</ul>
+      <p>
+	The generalisation is to
+	allow <span class="keyword">weights</span>
+	and <span class="keyword">delays</span>.
+	These modify the distance function to be of the form:
+      <p>
+	<math xmlns='http://www.w3.org/1998/Math/MathML'
+	display='block'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a
+	      x + b</annotation></semantics></math>
+      <p>
+	where <math xmlns='http://www.w3.org/1998/Math/MathML'
+	display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math>
+	(the weight)
+	and <math xmlns='http://www.w3.org/1998/Math/MathML'
+	display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math>
+	(the delay) can vary with the source point.
+      </p>
+      <p>
+	In double point mode, you set these for one of the points
+	since it is the relative weight and relative delay that
+	counts.
+      </p>
+    </div>
+    <div id="helpsign" class="help">
+      <a href="#" id="helplink">?</a>
     </div>
   </body>
 </html>
