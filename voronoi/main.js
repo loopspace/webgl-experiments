@@ -13,6 +13,38 @@ var perspectiveMatrix;
 // Current touched object
 var voronoiInTouch;
 
+// Parse query string
+var qs = (function(a) {
+    if (a == "") return {};
+    var b = {};
+    for (var i = 0; i < a.length; ++i)
+    {
+        var p=a[i].split('=', 2);
+        if (p.length == 1)
+            b[p[0]] = "";
+        else
+            b[p[0]] = decodeURIComponent(p[1].replace(/\+/g, " "));
+    }
+    return b;
+})(window.location.search.substr(1).split('&'));
+
+function queryBoolean(key,def) {
+    var b = def;
+    if ("no" + key in qs) {
+	if (qs["no" + key].toLowerCase() != "false" && qs["no" + key] != "0") {
+	    b = false;
+	}
+    }
+    if (key in qs) {
+	if (qs[key].toLowerCase() == "false" || qs[key] == "0") {
+	    b = false;
+	}
+    }
+    return b;
+}
+
+// Based on http://stackoverflow.com/a/21059677
+
 function start() {
     var canvas = document.getElementById('glCanvas');
     width = window.innerWidth
@@ -25,8 +57,11 @@ function start() {
 
     width -= 25;
     height -= 25;
+    var size = Math.min(width,height);
+    width = size;
+    height = size;
 
-    aspect = Math.min(width/4,height/2) - 25;
+    aspect = Math.min(width/2,height) - 25;
 
     canvas.width = width;
     canvas.height = height;
@@ -65,19 +100,37 @@ function start() {
 
     var chkbx = document.getElementById('npts');
     chkbx.addEventListener('change', setVoronoiType);
+    chkbx.checked = queryBoolean("numpoints",false);
     setVoronoiTypeAux(chkbx);
-    var a,b,c,elt;
+
+    chkbx = document.getElementById('linear');
+    chkbx.addEventListener('change', setVoronoiDistance);
+    chkbx.checked = queryBoolean("linear",true);
+    
+    setVoronoiDistanceAux(chkbx);
+
+    var elt;
     elt = document.getElementById('wgt');
-    a = elt.value;
     elt.addEventListener('change', setVoronoiParams);
+    if (qs.weight) elt.value = qs.weight;
     elt = document.getElementById('dis');
-    b = elt.value;
     elt.addEventListener('change', setVoronoiParams);
+    if (qs.delay) elt.value = qs.delay;
+    elt = document.getElementById('qnt');
+    elt.addEventListener('change', setVoronoiParams);
+    if (qs.extent) elt.value = qs.extent;
 
     elt = document.getElementById('wgts');
     elt.addEventListener('change', setVoronoiParams);
+    elt.checked = queryBoolean("weights",false);
+    
     elt = document.getElementById('dlys');
     elt.addEventListener('change', setVoronoiParams);
+    elt.checked = queryBoolean("delays",false);
+
+    elt = document.getElementById('exts');
+    elt.addEventListener('change', setVoronoiParams);
+    elt.checked = queryBoolean("extents",false);
 
     setVoronoiParams();
 //    elt = document.getElementById('qnt');
@@ -109,9 +162,35 @@ function start() {
      */
     var h = window.innerHeight - 20;
     hdv.style.height = h + 'px';
+
+    document.getElementById("dl").addEventListener('click', dlCanvas, false);
 }
 
+/* From https://stackoverflow.com/a/12796748/315213 */
+/* REGISTER DOWNLOAD HANDLER */
+/* Only convert the canvas to Data URL when the user clicks. 
+   This saves RAM and CPU ressources in case this feature is not required. */
+function dlCanvas() {
+    var canvas = document.getElementById('glCanvas');
+    var dt = canvas.toDataURL('image/png');
+    /* Change MIME type to trick the browser to downlaod the file instead of displaying it */
+    dt = dt.replace(/^data:image\/[^;]*/, 'data:application/octet-stream');
+
+    /* In addition to <a>'s "download" attribute, you can define HTTP-style headers */
+    dt = dt.replace(/^data:application\/octet-stream/, 'data:application/octet-stream;headers=Content-Disposition%3A%20attachment%3B%20filename=Canvas.png');
+
+    this.href = dt;
+};
+
 function resetSize() {
+    var hdv = document.getElementById('help');
+    /*
+      Set the help pane height to the window height,
+     */
+    var h = window.innerHeight - 20;
+    hdv.style.height = h + 'px';
+
+    
     var canvas = document.getElementById('glCanvas');
     width = window.innerWidth
 	|| document.documentElement.clientWidth
@@ -136,7 +215,7 @@ function initWebGL(canvas) {
     gl = null;
   
     // Try to grab the standard context. If it fails, fallback to experimental.
-    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    gl = canvas.getContext('webgl', {preserveDrawingBuffer: true}) || canvas.getContext('experimental-webgl', {preserveDrawingBuffer: true});
   
     // If we don't have a GL context, give up now
     if (!gl) {
@@ -151,36 +230,88 @@ function setVoronoiType(e) {
 }
 
 function setVoronoiTypeAux(e) {
-    var ipt;
-    if (e.checked) {
-	voronoi.setType(true);
-	document.getElementById('singleparam').style.display = 'none';
-	document.getElementById('multipleparam').style.display = 'table-row-group';
-    } else {
-	voronoi.setType(false);
-	document.getElementById('singleparam').style.display = 'table-row-group';
-	document.getElementById('multipleparam').style.display = 'none';
-    }
+    voronoi.setType(e.checked);
+    toggleElements()
     drawScene();
 }
 
+function setVoronoiDistance(e) {
+    setVoronoiDistanceAux(e.target);
+}
+
+function setVoronoiDistanceAux(e) {
+    voronoi.setLinear(e.checked);
+    toggleElements();
+    drawScene();
+}
+
+function toggleElements() {
+    var lin = document.getElementById('linear').checked;
+    var mul = document.getElementById('npts').checked;
+    var linelts = document.getElementsByClassName('linear');
+    var logelts = document.getElementsByClassName('log');
+    var mulelts = document.getElementsByClassName('multipleparam');
+    var sinelts = document.getElementsByClassName('singleparam');
+
+    var lon, loff, mon, moff, loffclass, moffclass;
+    if (lin) {
+	lon = linelts;
+	loff = logelts;
+	loffclass = 'log';
+    } else {
+	lon = logelts;
+	loff = linelts;
+	loffclass = 'linear';
+    }
+    if (mul) {
+	mon = mulelts;
+	moff = sinelts;
+	moffclass = 'singleparam';
+    } else {
+	mon = sinelts;
+	moff = mulelts;
+	moffclass = 'multipleparam';
+    }
+
+    for (var i = 0; i < loff.length; i++) {
+	loff[i].style.display = 'none';
+    }
+    for (var i = 0; i < moff.length; i++) {
+	moff[i].style.display = 'none';
+    }
+    for (var i = 0; i < lon.length; i++) {
+	if (!lon[i].classList.contains(moffclass)) {
+	    lon[i].style.display = 'table-row';
+	}
+    }
+    for (var i = 0; i < mon.length; i++) {
+	if (!mon[i].classList.contains(loffclass)) {
+	    mon[i].style.display = 'table-row';
+	}
+    }
+}
+
 function setVoronoiParams(e) {
-    var elt, a,b,c,d;
+    var elt, a,b,c,d,e,f;
     elt = document.getElementById('wgt');
     a = elt.value;
 
     elt = document.getElementById('dis');
     b = elt.value;
 
+    elt = document.getElementById('qnt');
+    c = elt.value;
+    
     elt = document.getElementById('wgts');
-    c = elt.checked;
+    d = elt.checked;
 
     elt = document.getElementById('dlys');
-    d = elt.checked;
-//    elt = document.getElementById('qnt');
-//    c = elt.value;
+    e = elt.checked;
 
-    voronoi.setParams(a,b,c,d);
+    elt = document.getElementById('exts');
+    f = elt.checked;
+
+    voronoi.setParams(a,b,c,d,e,f);
     drawScene();
 }    
 

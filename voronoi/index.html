@@ -7,8 +7,10 @@
     <script src="../utilities/glUtils.js"></script>
     <script src="voronoi.js"></script>
     <script src="main.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Sunflower:300"
+      rel="stylesheet">
     <link href="voronoi.css" rel="stylesheet">
-    <script id="shader-fs" type="x-shader/x-fragment">
+<script id="shader-fs" type="x-shader/x-fragment">
       //The interpolated coordinate for this fragment
       varying highp vec2 vCoordinate;
 
@@ -17,6 +19,8 @@
       uniform lowp vec3 params[16];
       uniform lowp float wgts;
       uniform lowp float dlys;
+      uniform lowp float exts;
+      uniform lowp float lin;
 
       lowp vec3 hsl2rgb( lowp vec3 c )
       {
@@ -30,13 +34,15 @@ void main()
       lowp float dd;
       lowp float a = 2.;
       lowp float ad;
-    lowp float p = 0.;
+      lowp float ld;
+      lowp float p = 0.;
       lowp float s;
       lowp float t;
 
     for (int i = 0; i < 16; i++) {
 	dd = distance(vCoordinate,pts[i]);
-	ad = (1. + wgts * (params[i].x - 1.)) * dd + dlys * params[i].y;
+	ld = -(1. - lin) * log(max(.0001,(1. - (1. + exts * (params[i].z - 1.)) * dd))) + lin * dd;
+	ad = (1. + wgts * (params[i].x - 1.)) * ld + dlys * params[i].y;
 	s = 1. - (1. - step(a,ad)) * (1. - step(np,float(i)));
 	t = 1. - (1. - step(d,dd)) * (1. - step(np,float(i)));
         p = (1.-s)*(float (i)) + s*p;
@@ -69,10 +75,12 @@ void main()
     </script>
   </head>
   <body onload="start()">
+    <div id="container">
     <canvas id="glCanvas" width="640" height="480">
       Your browser doesn't appear to support the 
       <code>&lt;canvas&gt;</code> element.
     </canvas>
+    </div>
     <div id="info">
       <form id="vform"></form>
       <table>
@@ -81,32 +89,41 @@ void main()
 	</tr>
 	<tr>
 	  <td>Multiple</td>
-	  <td id="npoints"><input type="checkbox" id="npts" form="vform"></td>
+	  <td id="npoints" class="rightalign"><input type="checkbox" id="npts" form="vform"></td>
+	</tr>
+	<tr>
+	  <td>Linear</td>
+	  <td id="lineartd" class="rightalign"><input type="checkbox"
+	  id="linear" form="vform" checked="checked"></td>
 	</tr>
 	<tr>
 	  <td>Parameters</td><td></td>
 	</tr>
-	<tbody id="singleparam">
-	  <tr>
-	    <td class="rightalign">
-	      <math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a x + b</annotation></semantics></math>
+	  <tr class="linear">
+	    <td class="centrealign" colspan="2">
+	      <math xmlns='http://www.w3.org/1998/Math/MathML'
+	      display='inline'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a
+		    x + b</annotation></semantics></math>
 	    </td>
 	  </tr>
-	<tr>
+	<tr class="log">
+	  <td class="centrealign" colspan="2">
+	    <math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mo lspace="verythinmathspace" rspace="0em">&minus;</mo><mi>a</mi><mi>log</mi><mo stretchy="false">(</mo><mn>1</mn><mo>&minus;</mo><mi>c</mi><mi>x</mi><mo stretchy="false">)</mo><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>&#x2d;a \log(1 &#x2d; c x) + b</annotation></semantics></math>
+	    </td>
+	  </tr>
+	<tr class="singleparam">
 	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math>:</td>
 	  <td><input type="text" id="wgt" form="vform" class="smallinput"></td>
 	</tr>
-	<tr>
+	<tr class="singleparam">
 	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math>:</td>
 	  <td><input type="text" id="dis" form="vform" class="smallinput"></td>
 	</tr>
-<!--	<tr>
-	  <td><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math></td>
-	  <td><input type="text" id="qnt" form="vform"></td>
-</tr> -->
-	</tbody>
-	<tbody id="multipleparam">
-	  <tr>
+	<tr id="extent" class="log singleparam">
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math>:</td>
+	  <td><input type="text" id="qnt" form="vform" class="smallinput"></td>
+	</tr>
+	  <tr class="multipleparam">
 	    <td>
 	      Use Weights
 	    </td>
@@ -114,7 +131,7 @@ void main()
 	      <input type="checkbox" id="wgts">
 	    </td>
 	  </tr>
-	  <tr>
+	  <tr class="multipleparam">
 	    <td>
 	      Use Delays
 	    </td>
@@ -122,12 +139,24 @@ void main()
 	      <input type="checkbox" id="dlys">
 	    </td>
 	  </tr>
-	  <tr>
+	  <tr id="extents" class="log multipleparam">
+	    <td>
+	      Use Extents
+	    </td>
+	    <td>
+	      <input type="checkbox" id="exts">
+	    </td>
+	  </tr>
+	  <tr class="multipleparam">
 	    <td colspan="2">
 	      <button type="button" id="regenerate">Regenerate Parameters</button>
 	    </td>
 	  </tr>
-	</tbody>
+	  <tr>
+	    <td colspan="2">
+	      <a id="dl" download="Voronoi.png" href="#" class="button">Download Diagram</a>
+	    </td>
+	  </tr>
       </table>
     </div>
     <div id="help" class="help">
@@ -136,37 +165,54 @@ void main()
 	This page allows you to explore generalised Voronoi diagrams.
       </p>
       <p>
-	There are two main modes:
+	There are two primary modes:
       </p>
 	<ul>
 	  <li><span class="mode">Multiple points</span>: in this mode,
-	  there are 16 points which can be dragged around.  The
-	    parameters are set at random.
+	  there are 16 points.  The
+	    parameters (see below) are set at random.
 	  <li><span class="mode">Double points</span>: in this mode,
-	  there are 2 points which are at fixed locations.  The
-	    parameters can be set manually.
+	  there are 2 points.  The parameters can be set manually for
+	  one of the points (it is the relative difference that
+	  matters, so it is only necessary to specify one set of
+	  parameters).
 	</ul>
       <p>
-	The generalisation is to
-	allow <span class="keyword">weights</span>
-	and <span class="keyword">delays</span>.
-	These modify the distance function to be of the form:
+	The diagram is generated by working out which source point
+	would reach a given point first.  The generalisation is to
+	allow different <span class="keyword">growth</span> functions
+	which say how fast the region from a given source point
+	expands outwards.
+      </p>
       <p>
+	The growth function can be
+	either <span class="keyword">linear</span>
+	or <span class="keyword">exponential</span>.  Each has certain
+	parameters which are set either by the user (when there are 2
+	points) or at random (when there are 16 points).  To work out
+	which source point would reach a certain point first, we
+	actually use the inverse of the growth formulae.  Thus the
+	formulae in use are:
+      </p>
+      <ul>
+	<li>Linear:
 	<math xmlns='http://www.w3.org/1998/Math/MathML'
-	display='block'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a
+	display='inline'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a
 	      x + b</annotation></semantics></math>
+	<li>Exponential:
+	  <math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mo lspace="verythinmathspace" rspace="0em">&minus;</mo><mi>a</mi><mi>log</mi><mo stretchy="false">(</mo><mn>1</mn><mo>&minus;</mo><mi>c</mi><mi>x</mi><mo stretchy="false">)</mo><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>&#x2d;a \log(1 &#x2d; c x) + b</annotation></semantics></math>
+      </ul>
       <p>
 	where <math xmlns='http://www.w3.org/1998/Math/MathML'
 	display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math>
-	(the weight)
-	and <math xmlns='http://www.w3.org/1998/Math/MathML'
+	(the weight),
+	<math xmlns='http://www.w3.org/1998/Math/MathML'
 	display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math>
-	(the delay) can vary with the source point.
+	(the delay), and <math xmlns='http://www.w3.org/1998/Math/MathML'
+	display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math>
+	(the extent) can vary with the source point.
       </p>
       <p>
-	In double point mode, you set these for one of the points
-	since it is the relative weight and relative delay that
-	counts.
       </p>
     </div>
     <div id="helpsign" class="help">

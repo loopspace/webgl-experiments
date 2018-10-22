@@ -8,27 +8,27 @@ function Voronoi() {
 	0.0, 0.0
     ]);
     this.points = new Float32Array([
-	0.2,0.2,
-	0.2,0.4,
-	0.2,0.6,
-	0.2,0.8,
-	0.4,0.2,
-	0.4,0.4,
-	0.4,0.6,
-	0.4,0.8,
-	0.6,0.2,
-	0.6,0.4,
-	0.6,0.6,
-	0.6,0.8,
-	0.8,0.2,
-	0.8,0.4,
-	0.8,0.6,
-	0.8,0.8,
+	0.125,0.125,
+	0.125,0.375,
+	0.125,0.625,
+	0.125,0.875,
+	0.375,0.125,
+	0.375,0.375,
+	0.375,0.625,
+	0.375,0.875,
+	0.625,0.125,
+	0.625,0.375,
+	0.625,0.625,
+	0.625,0.875,
+	0.875,0.125,
+	0.875,0.375,
+	0.875,0.625,
+	0.875,0.875,
     ]);
     var params = [];
     for (var i = 0; i < 16; i++) {
 	params.push(1+Math.random())
-	params.push(Math.random())
+	params.push(Math.random()*.25)
 	params.push(1+Math.random())
     }
     this.params = new Float32Array(params);
@@ -60,6 +60,8 @@ function Voronoi() {
     this.numpoints = 2;
     this.useWeights = false;
     this.useDelays = false;
+    this.useExtents = false;
+    this.linear = true;
     this.initShaders();
     this.initBuffers();
 }
@@ -112,7 +114,9 @@ Voronoi.prototype.initBuffers = function() {
     this.paramsUniform = gl.getUniformLocation(this.shaderProgram,'params');
     this.numPointsUniform = gl.getUniformLocation(this.shaderProgram,'np');
     this.useWeightsUniform = gl.getUniformLocation(this.shaderProgram,'wgts');
-    this.useDelayUniform = gl.getUniformLocation(this.shaderProgram,'dlys');
+    this.useDelaysUniform = gl.getUniformLocation(this.shaderProgram,'dlys');
+    this.useExtentsUniform = gl.getUniformLocation(this.shaderProgram,'exts');
+    this.isLinearUniform = gl.getUniformLocation(this.shaderProgram,'lin');
 }
 
 Voronoi.prototype.doBindings = function() {
@@ -129,7 +133,8 @@ Voronoi.prototype.doBindings = function() {
     if (this.numpoints == 2) {
 	gl.uniform2fv(this.pointsUniform, this.dblpoints);
 	gl.uniform3fv(this.paramsUniform, this.dblparams);
-	gl.uniform1f(this.useDelayUniform, 1);
+	gl.uniform1f(this.useDelaysUniform, 1);
+	gl.uniform1f(this.useExtentsUniform, 1);
 	gl.uniform1f(this.useWeightsUniform, 1);
     } else {
 	gl.uniform2fv(this.pointsUniform, this.points);
@@ -140,10 +145,20 @@ Voronoi.prototype.doBindings = function() {
 	    gl.uniform1f(this.useWeightsUniform, 0);
 	}
 	if (this.useDelays) {
-	    gl.uniform1f(this.useDelayUniform, 1);
+	    gl.uniform1f(this.useDelaysUniform, 1);
 	} else {
-	    gl.uniform1f(this.useDelayUniform, 0);
+	    gl.uniform1f(this.useDelaysUniform, 0);
 	}
+	if (this.useExtents) {
+	    gl.uniform1f(this.useExtentsUniform, 1);
+	} else {
+	    gl.uniform1f(this.useExtentsUniform, 0);
+	}
+    }
+    if (this.linear) {
+	gl.uniform1f(this.isLinearUniform, 1);
+    } else {
+	gl.uniform1f(this.isLinearUniform, 0);
     }
     gl.uniform1f(this.numPointsUniform, this.numpoints);
 
@@ -175,7 +190,11 @@ Voronoi.prototype.setType = function(b) {
     }
 }
 
-Voronoi.prototype.setParams = function(a,b,c,d) {
+Voronoi.prototype.setLinear = function(b) {
+    this.linear = b;
+}
+
+Voronoi.prototype.setParams = function(a,b,c,d,e,f) {
     a = parseFloat(a);
     if (isNaN(a)) {
 	a = 1;
@@ -184,24 +203,24 @@ Voronoi.prototype.setParams = function(a,b,c,d) {
     if (isNaN(b)) {
 	b = 0;
     }
-    /*
     c = parseFloat(c);
     if (isNaN(c)) {
 	c = 1;
     }
-    */
-    this.dblparams[3] = parseFloat(a);
-    this.dblparams[4] = parseFloat(b);
-    //    this.dblparams[5] = parseFloat(c);
-    this.useWeights = c;
-    this.useDelays = d;
+
+    this.dblparams[3] = a;
+    this.dblparams[4] = b;
+    this.dblparams[5] = c;
+    this.useWeights = d;
+    this.useDelays = e;
+    this.useExtents = f;
 }
 
 Voronoi.prototype.regenerate = function() {
     var params = [];
     for (var i = 0; i < 16; i++) {
 	params.push(1+Math.random())
-	params.push(Math.random())
+	params.push(Math.random()*.25)
 	params.push(1+Math.random())
     }
     this.params = new Float32Array(params);
@@ -231,9 +250,15 @@ Voronoi.prototype.doMouseDown = function(e) {
     var x,y,d,dd,p;
     d = 4;
     p = 0;
-    for (var i = 0; i < 16; i++) {
-	x = this.points[2*i];
-	y = this.points[2*i+1];
+    var pts;
+    if (this.numpoints == 2) {
+	pts = this.dblpoints;
+    } else {
+	pts = this.points;
+    }
+    for (var i = 0; i < this.numpoints; i++) {
+	x = pts[2*i];
+	y = pts[2*i+1];
 	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
 	if (dd < d) {
 	    d = dd;
@@ -241,7 +266,8 @@ Voronoi.prototype.doMouseDown = function(e) {
 	}
     }
     this.touchpt = p;
-    this.touchoffset = [this.mousept.x - this.points[p],this.mousept.y - this.points[p+1]];
+    this.touchoffset = [this.mousept.x - pts[p],this.mousept.y - pts[p+1]];
+    this.touchpts = pts;
 }
 
 Voronoi.prototype.doMouseMove = function(e) {
@@ -250,8 +276,8 @@ Voronoi.prototype.doMouseMove = function(e) {
     this.mouseIsMoving = true;
     
     var pt = convertPoint(e,this.mvpMatrix);
-    this.points[this.touchpt] = pt.x - this.touchoffset[0];
-    this.points[this.touchpt+1] = pt.y - this.touchoffset[1];
+    this.touchpts[this.touchpt] = pt.x - this.touchoffset[0];
+    this.touchpts[this.touchpt+1] = pt.y - this.touchoffset[1];
     this.draw();
 }
 
@@ -261,6 +287,9 @@ Voronoi.prototype.doMouseUp = function(e) {
     this.mouseIsMoving = false;
 }
 
+/*
+  Needs implementing for touch screens
+*/
 Voronoi.prototype.doTouchStart = function(e) {
     this.touchIsMoving = false;
     this.touchpt = convertPoint(e,this.mvpMatrix);
