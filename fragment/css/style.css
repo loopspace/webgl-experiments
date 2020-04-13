@@ -1,6 +1,7 @@
 #shader {
     float: left;
-    width: 30%;
+    min-width: 30ex;
+    width: 30ex;
 }
 
 #shaderText {
@@ -20,8 +21,9 @@
 }
 
 #container {
-    margin-left: 30%;
-    width: 70%;
+    margin-left: 30ex;
+    padding-left: 10px;
+    width: calc(100% - 30ex);
 }
 
 #wrapper {

@@ -1,8 +1,8 @@
 var errorfn;
 
 
-// Image class
-function Image(s,c) {
+// canvasImage class
+function canvasImage(s,c) {
     this.valid = true;
     this.source = s;
 //    this.colour = new Float32Array(c);
@@ -13,19 +13,20 @@ function Image(s,c) {
 	[1.,1.,1.,1.],
 	[1.,1.,1.,1.]
     ]);
+    this.sizeSrc = 0;
 }
 
-Image.prototype.setError = function(fn) {
+canvasImage.prototype.setError = function(fn) {
     errorfn = fn;
 }
 
-Image.prototype.initialise = function() {
+canvasImage.prototype.initialise = function() {
     this.valid = true;
     this.initShaders();
     this.initBuffers();
 }
 
-Image.prototype.initShaders = function() {
+canvasImage.prototype.initShaders = function() {
     if (!this.valid) {
 	return null;
     }
@@ -64,11 +65,11 @@ Image.prototype.initShaders = function() {
     this.shaderProgram = shaderProgram;
 }
 
-Image.prototype.initBuffers = function() {
+canvasImage.prototype.initBuffers = function() {
     if (!this.valid) {
 	return null;
     }
-    this.getImage();
+    this.setSize();
 
     var w = this.halfwidth;
     var h = this.halfheight;
@@ -106,15 +107,30 @@ Image.prototype.initBuffers = function() {
 
 }
 
-Image.prototype.getImage = function() {
-    var img = this.textures[0].image;
-    var w = img.width;
-    var h = img.height;
-    this.halfwidth = w/Math.max(w,h);
-    this.halfheight = h/Math.max(w,h);
+canvasImage.prototype.setSize = function() {
+    var w,h;
+    if (this.width) {
+	w = this.width;
+	h = this.height;
+    } else {
+	var i = 0;
+	if (this.sizeSrc) {
+	    i = this.sizeSrc;
+	} 
+	var img = this.textures[i].image;
+	if (this.textures[i].video) {
+	    w = img.videoWidth;
+	    h = img.videoHeight;
+	} else {
+	    w = img.width;
+	    h = img.height;
+	}
+    }
+    this.halfwidth = w/Math.min(w,h);
+    this.halfheight = h/Math.min(w,h);
 }
 
-Image.prototype.getTextures = function() {
+canvasImage.prototype.getTextures = function() {
     var str = "";
     for (var i = 0; i < this.textures.length; i++) {
 	str += "uniform sampler2D " + this.textures[i].name + ";\n";
@@ -124,7 +140,7 @@ Image.prototype.getTextures = function() {
     return str;
 }
 
-Image.prototype.doBindings = function() {
+canvasImage.prototype.doBindings = function() {
     if (!this.valid) {
 	return null;
     }
@@ -151,7 +167,7 @@ Image.prototype.doBindings = function() {
 
 }
 
-Image.prototype.bindTexture = function(i) {
+canvasImage.prototype.bindTexture = function(i) {
     gl.activeTexture(gl.TEXTURE0 + i);
     gl.bindTexture(gl.TEXTURE_2D, this.textures[i].texture);
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
@@ -173,11 +189,25 @@ Image.prototype.bindTexture = function(i) {
     gl.uniform1f(this.textures[i].height,h);    
 }
 
-Image.prototype.updateTime = function(dt) {
+canvasImage.prototype.updateTime = function(dt) {
     gl.uniform1f(this.deltaTimeUniform,dt);    
 }
 
-Image.prototype.enableProgram = function() {
+canvasImage.prototype.updateVideos = function() {
+    for (var i = 0; i < this.textures.length; i++) {
+	if (this.textures[i].video) {
+	    if (this.textures[i].image.readyState === this.textures[i].image.HAVE_ENOUGH_DATA) {
+		gl.bindTexture(gl.TEXTURE_2D,this.textures[i].texture);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures[i].image);
+	    }
+	} else if (this.textures[i].live) {
+	    gl.bindTexture(gl.TEXTURE_2D,this.textures[i].texture);
+	    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.textures[i].image);
+	}
+    }
+}
+
+canvasImage.prototype.enableProgram = function() {
     gl.useProgram(this.shaderProgram);
 
     gl.enableVertexAttribArray(this.vertexPositionAttribute);    
@@ -186,13 +216,13 @@ Image.prototype.enableProgram = function() {
     
 }
 
-Image.prototype.reloadShader = function() {
+canvasImage.prototype.reloadShader = function() {
     this.valid = true;
     this.initShaders();
     this.initBuffers();
 }
 
-Image.prototype.setup = function() {
+canvasImage.prototype.setup = function() {
     this.enableProgram();
     this.doBindings();
     if (!this.valid) {
@@ -200,15 +230,16 @@ Image.prototype.setup = function() {
     }
 }
 
-Image.prototype.draw = function(dt) {
+canvasImage.prototype.draw = function(dt) {
     this.updateTime(dt);
+    this.updateVideos();
     setMatrixUniforms(this.shaderProgram);
     gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
 
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
 }
 
-Image.prototype.setColours = function(c) {
+canvasImage.prototype.setColours = function(c) {
     var nc = [];
     for (var i = 0; i < c.length; i++) {
 	for (var j = 0; j < c[i].length; j++) {
@@ -218,20 +249,26 @@ Image.prototype.setColours = function(c) {
     this.colours = new Float32Array (nc);
 }
 
-Image.prototype.setTexture = function(i,t,img) {
+canvasImage.prototype.setTexture = function(i,t,img,live) {
     if (!this.textures[i]) {
 	this.textures[i] = {};
     }
     this.textures[i].image = img;
     this.textures[i].name = t;
+    if (img.tagName == "VIDEO") {
+	this.textures[i].video = true;
+    } else {
+	this.textures[i].video = false;
+    }
+    this.textures[i].live = live;
 //    this.textures[i].location = gl["TEXTURE" + i];
 }
 
-Image.prototype.rmTexture = function() {
+canvasImage.prototype.rmTexture = function() {
     this.textures.pop();
 }
 
-Image.prototype.setCoordinates = function() {
+canvasImage.prototype.setCoordinates = function() {
     this.coordinates = new Float32Array([
 	this.viewport[2],this.viewport[3],
 	this.viewport[0],this.viewport[3],
@@ -240,28 +277,28 @@ Image.prototype.setCoordinates = function() {
     ]);
 }
 
-Image.prototype.setParameter = function(c) {
+canvasImage.prototype.setParameter = function(c) {
     this.parameters = new Float32Array(c);
 }
 
-Image.prototype.getCentre = function() {
+canvasImage.prototype.getCentre = function() {
     var x = .5*(this.viewport[2] + this.viewport[0]);
     var y = .5*(this.viewport[3] + this.viewport[1]);
     return [x,y];
 }
 
-Image.prototype.getViewport = function() {
+canvasImage.prototype.getViewport = function() {
     return this.viewport;
 }
 
-Image.prototype.isTouchedBy = function(e) {
+canvasImage.prototype.isTouchedBy = function(e) {
     var pt = convertPoint(e,this.mvpMatrix);
     if (Math.abs(pt.x) < 1 && Math.abs(pt.y) < 1)
 	return true;
     return false;
 }
 
-Image.prototype.convertToViewport = function(e) {
+canvasImage.prototype.convertToViewport = function(e) {
     var pt = convertPoint(e,this.mvpMatrix);
     
     // Convert to viewport coordinates
@@ -271,7 +308,7 @@ Image.prototype.convertToViewport = function(e) {
 }
 
 
-Image.prototype.doWheel = function(e) {
+canvasImage.prototype.doWheel = function(e) {
     var pt = this.convertToViewport(e);
     var s = Math.pow(1.001,e.deltaY);
 
@@ -283,14 +320,14 @@ Image.prototype.doWheel = function(e) {
     this.setCoordinates();
 }
 
-Image.prototype.doMouseDown = function(e) {
+canvasImage.prototype.doMouseDown = function(e) {
     if (e.button != 0)
 	return;
     this.mouseIsMoving = false;
     this.mousept = this.convertToViewport(e);
 }
 
-Image.prototype.doMouseMove = function(e) {
+canvasImage.prototype.doMouseMove = function(e) {
     if (e.buttons != 1)
 	return;
     this.mouseIsMoving = true;
@@ -307,7 +344,7 @@ Image.prototype.doMouseMove = function(e) {
     this.setCoordinates();
 }
 
-Image.prototype.doMouseUp = function(e) {
+canvasImage.prototype.doMouseUp = function(e) {
     if (e.button != 0)
 	return;
     if (!this.mouseIsMoving) {
@@ -317,12 +354,12 @@ Image.prototype.doMouseUp = function(e) {
     this.mouseIsMoving = false;
 }
 
-Image.prototype.doTouchStart = function(e) {
+canvasImage.prototype.doTouchStart = function(e) {
     this.touchIsMoving = false;
     this.touchpt = this.convertToViewport(e);
 }
 
-Image.prototype.doTouchMove = function(e) {
+canvasImage.prototype.doTouchMove = function(e) {
     this.touchIsMoving = true;
     
     var pt = this.convertToViewport(e);
@@ -337,7 +374,7 @@ Image.prototype.doTouchMove = function(e) {
     this.setCoordinates();
 }
 
-Image.prototype.doTouchEnd = function(e) {
+canvasImage.prototype.doTouchEnd = function(e) {
     if (!this.touchIsMoving) {
 	this.viewport = this.defaultViewport.slice();
 	this.setCoordinates();

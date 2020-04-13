@@ -57,7 +57,10 @@
     </script>
   </head>
   <body onload="start()">
-    <div id="images" class="hidden"></div>
+    <div id="images" class="hidden">
+      <video id="webcam"></video>
+      <img id="previmg">
+    </div>
     <div id="shader">
       <form id="shaderForm">
 	<textarea id="shaderText">lowp vec4 c = texture2D(texture, vTexcoord);
@@ -69,7 +72,8 @@ gl_FragColor = c;
 	<button id="reload" type="button">Reload</button>
 	<button id="reset" type="button">Reset</button>
 	<button id="clear" type="button">Clear</button>
-	<span class="button"><a id="save" class="button">Save Image</a></span>
+	<button id="save" type="button">Save Image</button>
+	<span class="button"><a id="download" class="button">Download</a></span>
 	<br>
 	<table id='textable'>
 	  <tr>
@@ -78,11 +82,11 @@ gl_FragColor = c;
 	  <tr>
 	    <td><code>texture</code>&nbsp;&nbsp;</td><td>
 	      <select id="texture">
-		<optgroup label="Colour Images" id="colourimgs">
+		<optgroup label="Colour Images">
 		  <option>Colour Circles</option>
 		  <option>Colour Gradient</option>
 		</optgroup>
-		<optgroup label="Backgrounds" id="backgrounds">
+		<optgroup label="Backgrounds">
 		  <option>Domkirke (winter)</option>
 		  <option>Nidelva (winter)</option>
 		  <option>Matlock Bridge</option>
@@ -102,7 +106,7 @@ gl_FragColor = c;
 		  <option>Green Dragonfly</option>
 		  <option>Blue Dragonfly</option>
 		</optgroup>
-		<optgroup label="Shakespeare Characters" id="chars">
+		<optgroup label="Shakespeare Characters">
 		  <option>Bianca</option>
 		  <option>Brutus</option>
 		  <option>Cleopatra</option>
@@ -118,7 +122,7 @@ gl_FragColor = c;
 		  <option>Romeo</option>
 		  <option>Yago</option>
 		</optgroup>
-		<optgroup label="Silhouettes" id="sils">
+		<optgroup label="Silhouettes">
 		  <option>Scorpion</option>
 		  <option>Chicken</option>
 		  <option>Eagle</option>
@@ -131,7 +135,7 @@ gl_FragColor = c;
 		  <option>Dog</option>
 		  <option>Stork</option>
 		</optgroup>
-		<optgroup label="Masks" id="masks">
+		<optgroup label="Masks">
 		  <option>Rectangle</option>
 		  <option>Ellipse</option>
 		  <option>Diamond</option>
@@ -154,7 +158,14 @@ gl_FragColor = c;
 		  <option>Rounded Rectangle</option>
 		  <option>Chamfered Rectangle</option>
 		</optgroup>
-		<optgroup label="Your Pictures" id="yourpics">
+		<optgroup label="Videos">
+		  <option>Spinning Fan</option>
+		  <option class="webcamopt">Webcam</option>
+		</optgroup>
+		<optgroup label="Special Textures">
+		  <option class="prevopt">Previous Rendering</option>
+		</optgroup>
+		<optgroup label="Your Pictures">
 		</optgroup>
 	      </select>
 	    </td>
@@ -181,6 +192,7 @@ gl_FragColor = c;
 	  </tr>
 	</table>
 	<input type="checkbox" id="animating">Animate</input>
+	<input type="checkbox" id="previous">Enable previous image</input>
       </form>
 	<p id="imgsrc">
 	  Shakespeare Characters and Silhouettes from <a href="https://openclipart.org">OpenClipart</a>.

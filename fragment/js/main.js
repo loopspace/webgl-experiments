@@ -7,8 +7,13 @@ var start;
 
 var img;
 
+var savedimgs = 0;
+
 var start;
 var animating;
+var previous;
+var previndex;
+var webindex;
 
 // Matrix stack
 var matrixStack = [];
@@ -86,6 +91,12 @@ var imagesrcs = [
     "chamferedRectangle.png",
 ];
 
+// Videos
+var videosrcs = [
+    "fan.mov",
+];
+
+
 var textures = [
     'texture'
 ];
@@ -105,7 +116,7 @@ function start() {
     width -= 25;
     height -= 25;
 
-    aspect = Math.min(width/2,height/2) - 25;
+    aspect = Math.min(width/2,height/2);// - 25;
 
     canvas.width = width;
     canvas.height = height;
@@ -159,7 +170,7 @@ function start() {
     gl.enable(gl.BLEND);
     gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
 
-    img = new Image('shaderText',[1.0,0.0,0.0,1.0]);
+    img = new canvasImage('shaderText',[1.0,0.0,0.0,1.0]);
     img.setError(doError);
 
     canvas.addEventListener('wheel',doWheel);
@@ -180,6 +191,7 @@ function start() {
     btn = document.getElementById('save');
     btn.addEventListener('click',function() {saveImage(); });
 
+
     btn = document.getElementById('imgload');
     btn.addEventListener('change',addImage);
     btn.value = "";
@@ -196,6 +208,34 @@ function start() {
 	drawScene();
     });
     animating = chbx.checked;
+
+    chbx = document.getElementById('previous');
+    chbx.addEventListener('change',function(e) {
+	previous = e.target.checked;
+	var opts = document.querySelectorAll('.prevopt');
+	if (previous) {
+	    for (var i = 0; i < opts.length; i++) {
+		opts[i].removeAttribute('disabled');
+	    }
+	} else {
+	    for (var i = 0; i < opts.length; i++) {
+		opts[i].setAttribute('disabled','disabled');
+	    }
+	}
+	
+	drawScene();
+    });
+    previous = chbx.checked;
+    var opts = document.querySelectorAll('.prevopt');
+    if (previous) {
+	for (var i = 0; i < opts.length; i++) {
+	    opts[i].removeAttribute('disabled');
+	}
+    } else {
+	for (var i = 0; i < opts.length; i++) {
+	    opts[i].setAttribute('disabled','disabled');
+	}
+    }
     
     var cols = ['ul','ur','bl','br'];
     var col;
@@ -216,18 +256,63 @@ function start() {
 
     // Preload all the images for faster rendering
     var loaded = 0;
+    var finished = imagesrcs.length + videosrcs.length - 1;
     var imgdiv = document.getElementById('images');
+    var elt;
     for (var i = 0; i < imagesrcs.length; i++) {
-	images[i] = document.createElement('img');
-	images[i].src = "./Images/" + imagesrcs[i];
-	imgdiv.appendChild(images[i]);
-	images[i].addEventListener('load',function() {
+	elt = document.createElement('img');
+	elt.src = "./Images/" + imagesrcs[i];
+	images.push(elt);
+	imgdiv.appendChild(elt);
+	elt.addEventListener('load',function() {
 	    loaded++;
-	    if (loaded == imagesrcs.length - 1) {
+	    if (loaded == finished) {
 		initialise();
 	    }
 	});
     }
+    for (var i = 0; i < videosrcs.length; i++) {
+	elt = document.createElement('video');
+	elt.src = "./Images/" + videosrcs[i];
+//	elt.play();
+	elt.loop = true;
+	images.push(elt);
+	imgdiv.appendChild(elt);
+	elt.addEventListener('load',function() {
+	    loaded++;
+	    if (loaded == finished) {
+		initialise();
+	    }
+	});
+    }
+
+     // Initialise the webcam, no audio
+    var constraints = { audio: false, video: true };
+    var webcam = document.querySelector('#webcam');
+    images.push(webcam);
+    webindex = images.length - 1;
+    var opts = document.querySelectorAll('.webcamopt');
+    for (var i = 0; i < opts.length; i++) {
+	opts[i].setAttribute('disabled','disabled');
+    }
+
+    navigator.mediaDevices.getUserMedia(constraints)
+        .then(function(mediaStream) {
+            webcam.srcObject = mediaStream;
+            webcam.onloadedmetadata = function(e) {
+                webcam.play();
+		var opts = document.querySelectorAll('.webcamopt');
+		for (var i = 0; i < opts.length; i++) {
+		    opts[i].removeAttribute('disabled');
+		}
+            };
+        })
+        .catch(function(err) { console.log(err.name + ": " + err.message); });
+
+    var prev = document.querySelector('#previmg');
+    images.push(prev);
+    previndex = images.length - 1;
+
 }
 
 function initialise() {
@@ -254,10 +339,11 @@ function resetSize() {
     width = Math.floor(width);
     height -= 25;
 
-    aspect = Math.min(width/2,height/2) - 25;
+    aspect = Math.min(width/2,height/2);// - 25;
 
     canvas.width = width;
     canvas.height = height;
+
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 }
 
@@ -272,14 +358,58 @@ function clearShaderText() {
 }
 
 function saveImage() {
+    var canvas = document.getElementById('glCanvas');
+    
+    canvas.toBlob(function(b) {
+	var imgdiv = document.getElementById('images');
+	var img = document.createElement('img');
+	images.push(img);
+	imgdiv.appendChild(img);
+	var imgnum = savedimgs;
+	savedimgs++;
+        img.src = window.URL.createObjectURL(b);
 
+	img.addEventListener("load", function() {
+	    window.URL.revokeObjectURL(b);
+	    
+	    var sel,optgrps,opt,optgrp;
+	    for (var i = 0; i < textures.length; i++) {
+		sel = document.getElementById('texture' + (i == 0 ? '' : i));
+		optgrps = sel.childNodes;
+		for (var j = 0; j < optgrps.length; j++) {
+		    if (optgrps[j].tagName == 'OPTGROUP') {
+			optgrp = optgrps[j];
+		    }
+		}
+		opt = document.createElement('option');
+		opt.text = 'Saved Image ' + imgnum;
+		opt.value = sel.length;
+		optgrp.appendChild(opt);
+	    }
+	});
+    });
+    
 }
 
 function initWebGL(canvas) {
     gl = null;
   
     // Try to grab the standard context. If it fails, fallback to experimental.
-    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+    gl = canvas.getContext(
+	'webgl',
+	{
+	    premultipliedAlpha: false,
+	    preserveDrawingBuffer: true,
+	    willReadFrequently: true,
+	}
+    ) || canvas.getContext(
+	'experimental-webgl',
+	{
+	    premultipliedAlpha: false,
+	    preserveDrawingBuffer: true,
+	    willReadFrequently: true,
+	}
+    );
   
     // If we don't have a GL context, give up now
     if (!gl) {
@@ -312,10 +442,23 @@ function setBackground() {
 }
 
 function setTextures() {
-    var sel;
+    var sel,live;
+    for (var i = 0; i < images.length; i++) {
+	if (images[i].tagName == "VIDEO") {
+	    images[i].pause();
+	}
+    }
     for (var i = 0; i < textures.length; i++) {
 	sel = document.getElementById(textures[i]);
-	img.setTexture(i,textures[i],images[sel.value]);
+	if (sel.value == previndex) {
+	    live = true;
+	} else {
+	    live = false;
+	}
+	img.setTexture(i,textures[i],images[sel.value],live);
+	if (images[sel.value].tagName == "VIDEO") {
+	    images[sel.value].play();
+	}
     }
     img.initShaders();
     img.initBuffers();
@@ -350,20 +493,41 @@ function drawSceneAux(timestamp) {
     mvScale([aspect,aspect,1]);
     img.draw(dt);
     popMatrix();
-    
-    if (animating) {
-	window.requestAnimationFrame(drawSceneAux);
+
+    if (previous) {
+	setPreviousImage();
     } else {
+    	if (animating) {
+	    window.requestAnimationFrame(drawSceneAux);
+	}
+    }
+
+    if (!animating) {
 	setDownloadImage();
     }
 }
 
 function setDownloadImage() {
     var canvas = document.getElementById('glCanvas');
-    var a = document.getElementById('save');
+    var a = document.getElementById('download');
     canvas.toBlob(function(b) {
         a.href = window.URL.createObjectURL(b);
+	window.URL.revokeObjectURL(b);
         a.download = 'image.png';
+    });
+}
+
+function setPreviousImage() {
+    var canvas = document.getElementById('glCanvas');
+    var prev = document.getElementById('previmg');
+    canvas.toBlob(function(b) {
+        prev.src = window.URL.createObjectURL(b);
+	prev.addEventListener('load',function() {
+	    window.URL.revokeObjectURL(b);
+	    if (animating) {
+		window.requestAnimationFrame(drawSceneAux);
+	    }
+	}, {once: true});
     });
 }
 
