@@ -1,0 +1,95 @@
+#info {
+    position: absolute;
+    top: 0;
+    left: 0;
+    border-radius: 5px;
+    background-color: #ccc;
+    padding: 5px;
+}
+
+#instructions {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    border-radius: 5px;
+    background-color: #ccc;
+    padding: 5px;
+}
+
+body {
+    margin: 10px;
+    font-family: 'Sunflower', sans-serif;
+}
+
+#container {
+    background-color: #000;
+}
+
+#glCanvas {
+    display: block;
+    margin: 0 auto;
+}
+
+.help {
+    position: fixed;
+    right: 0px;
+    top: 0px;
+    border-radius: 5px 0px 5px 5px;
+    border: 1px solid;
+    padding: 5px;
+    background: #ccc;
+    padding-right: 15px;
+}
+
+#help {
+    display: none;
+    overflow: auto;
+    width: 33%;
+}
+
+#helpsign {
+    font-size: 200%;
+    padding-left: 15px;
+    background: #ddd;
+}
+
+#helpsign a {
+    text-decoration: none;
+    color: black;
+}
+
+.smallinput {
+    width: 5em;
+}
+
+.rightalign {
+    text-align: right;
+}
+
+.centrealign {
+    text-align: center;
+}
+
+/*
+https://stackoverflow.com/a/8357227/315213
+*/
+.button {
+    display: inline-block;
+    background: #eee;
+    padding: 5px 15px;
+    text-align: center;
+    border-radius: 5px;
+    border: #aaa solid 1px;
+    color: #444;
+    font-size: 88%;
+    text-decoration: none;
+    margin: 0 auto;
+}
+
+button {
+    font-family: 'Sunflower', sans-serif;
+}
+
+.texture {
+    display: none;
+}

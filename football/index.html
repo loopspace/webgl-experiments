@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <title>webgl Experiments: Voronoi Diagrams</title>
+    <script src="../utilities/sylvester.js"></script>
+    <script src="../utilities/glUtils.js"></script>
+    <script src="voronoi.js"></script>
+    <script src="main.js"></script>
+    <link href="https://fonts.googleapis.com/css?family=Sunflower:300"
+      rel="stylesheet">
+    <link href="voronoi.css" rel="stylesheet">
+<script id="shader-fs" type="x-shader/x-fragment">
+  //The interpolated coordinate for this fragment
+  varying highp vec2 vCoordinate;
+
+  uniform sampler2D pitch;
+  uniform lowp vec2 pts[11];
+  uniform mediump float np;
+  uniform lowp vec3 params[11];
+  uniform lowp float wgts;
+  uniform lowp float dlys;
+  uniform lowp float exts;
+  uniform lowp float lin;
+  uniform highp float aspect;
+
+  lowp vec3 hsl2rgb( lowp vec3 c )
+  {
+      lowp vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
+      return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
+  }
+      
+  void main()
+  {
+      lowp float d = 2.;
+      lowp float dd;
+      lowp float da = 2.;
+      lowp float dda;
+      lowp float a = 2.;
+      lowp float ad;
+      lowp float ld;
+      lowp float p = 0.;
+      lowp float s;
+      lowp float t;
+
+      lowp vec4 pcol = texture2D(pitch, vCoordinate);
+
+      lowp vec2 tc;
+    
+      for (int i = 0; i < 11; i++) {
+	  dd = distance(vCoordinate,pts[i]);
+	  tc = vCoordinate - pts[i];
+	  tc.x *= aspect;
+	  dda = length(tc);
+	  
+	  ld = -(1. - lin) * log(max(.0001,(1. - (1. + exts * (params[i].z - 1.)) * dd))) + lin * dd;
+	  ad = (1. + wgts * (params[i].x - 1.)) * ld + dlys * params[i].y;
+	  s = 1. - (1. - step(a,ad)) * (1. - step(np,float(i)));
+	  t = 1. - (1. - step(d,dd)) * (1. - step(np,float(i)));
+          p = (1.-s)*(float (i)) + s*p;
+          a = s*a + (1.-s)*ad;
+          d = t*d + (1.-t)*dd;
+	  da = t * da + (1. - t)* dda;
+      }
+      lowp float l = .5;
+      s = step(.01,da);
+      l = s*.5 + (1. - s)*1.;
+      //Sample the texture at the interpolated coordinate
+      lowp vec4 col = vec4(hsl2rgb(vec3(p/16.,1.,l)),1.);
+      col.rgb *= .25;
+      col.rgb += .75 * pcol.rgb;
+      col.rgb = col.rgb*s + (1. - s)*vec3(1.);
+
+    
+      //Set the output color to the texture color
+      gl_FragColor = col;
+  }
+    </script>
+    <script id="shader-vs" type="x-shader/x-vertex">
+      attribute vec3 aVertexPosition;
+      attribute vec2 aVertexCoordinate;
+    
+      uniform mat4 uMVMatrix;
+      uniform mat4 uPMatrix;
+      
+      varying highp vec2 vCoordinate;
+    
+      void main(void) {
+        gl_Position = uPMatrix * uMVMatrix * vec4(aVertexPosition, 1.0);
+        vCoordinate = aVertexCoordinate;
+      }
+    </script>
+  </head>
+  <body onload="start()">
+    <div class="texture">
+      <img id="pitch" src="football.png">
+    </div>
+    <div id="container">
+    <canvas id="glCanvas" width="640" height="480">
+      Your browser doesn't appear to support the 
+      <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    </div>
+    <div id="help" class="help">
+      <h3>Voronoi Football</h3>
+      <p>
+	This page allows you to explore the Voronoi diagram for a
+	football team.
+      </p>
+      <p>
+      </p>
+    </div>
+    <div id="helpsign" class="help">
+      <a href="#" id="helplink">?</a>
+    </div>
+  </body>
+</html>
