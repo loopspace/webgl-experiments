@@ -14,45 +14,42 @@
   //The interpolated coordinate for this fragment
   varying highp vec2 vCoordinate;
 
-  uniform sampler2D pitch;
-  uniform lowp vec2 pts[11];
-  uniform mediump float np;
-  uniform lowp vec3 params[11];
+  uniform sampler2D pitch; // image of pitch for background
+  uniform lowp vec2 pts[11]; // positions of players
+  uniform lowp vec3 params[11]; // variations of distance
   uniform lowp float wgts;
   uniform lowp float dlys;
   uniform lowp float exts;
   uniform lowp float lin;
-  uniform highp float aspect;
-
-  lowp vec3 hsl2rgb( lowp vec3 c )
-  {
-      lowp vec3 rgb = clamp( abs(mod(c.x*6.0+vec3(0.0,4.0,2.0),6.0)-3.0)-1.0, 0.0, 1.0 );
-      return c.z + c.y * (rgb-0.5)*(1.0-abs(2.0*c.z-1.0));
-  }
+  uniform highp float aspect; // aspect ratio of pitch image
       
   void main()
   {
-      lowp float d = 2.;
-      lowp float dd;
-      lowp float da = 2.;
-      lowp float dda;
-      lowp float a = 2.;
-      lowp float ad;
-      lowp float ld;
-      lowp float p = 0.;
+      lowp float d = 2.; // shortest actual distance
+      lowp float dd; // actual distance to current point
+      lowp float a = 2.; // alternative metric distance
+      lowp float ad; // alternative metric distance 
+      lowp float ld; // variations of distance
+      lowp float p = 0.; // index of nearest player
+      lowp vec2 pt = pts[0]; // location of nearest player
       lowp float s;
       lowp float t;
-      lowp float w = 0.;
-
-      lowp vec4 pcol = texture2D(pitch, vCoordinate);
-
+      lowp float w = 0.; // for locating boundary between regions
       lowp vec2 tc;
+
+      // pitch background
+      lowp vec4 pcol = texture2D(pitch, vCoordinate);
+      // highlight colour
+      lowp vec4 hcol = vec4(1.,0.,1.,1.);
     
       for (int i = 0; i < 11; i++) {
+	  // Adjust vector to i-th point to take aspect ratio into account
 	  tc = vCoordinate - pts[i];
 	  tc.x *= aspect;
+	  // Distance to current player
 	  dd = length(tc);
-	  
+
+	  // Adjusted distance, if requested
 	  ld = -(1. - lin) * log(
 	      max(.0001,
 		  (1. - (1. + exts * (params[i].z - 1.)) * dd)))
@@ -60,30 +57,31 @@
 	  
 	  ad = (1. + wgts * (params[i].x - 1.)) * ld + dlys *
 	      params[i].y;
-	  
-	  s = 1. - (1. - step(a,ad)) * (1. - step(np,float(i)));
-	  t = 1. - (1. - step(d,dd)) * (1. - step(np,float(i)));
-	  w = (1.-s)*( step(abs(d*d - dd*dd),0.001) )
-	      + s* max(w, step(abs(d*d - dd*dd),0.001));
+
+	  // s is 0 if the new adjusted distance is shorter
+	  s = 1. - (1. - step(a,ad));
+	  // t is 0 if the new actual distance is shorter
+	  t = 1. - (1. - step(d,dd));
+	  // w is 1 if there is a new shortest distance and it is
+	  // nearly the same as the current distance, or if the latest
+	  // distance is not the shortest but is very close
+	  w = (1.-s)*( step(abs(d*d - dd*dd),0.005 * distance(pts[i],pt)) )
+	      + s* max(w, step(abs(d*d - dd*dd),0.005 *
+			       distance(pts[i],pt)));
+	  // adjust the index of the current point
           p = (1.-s)*(float (i)) + s*p;
+	  // adjust the location of the current point
+	  pt = (1.-s)*pts[i] + s*pt;
+	  // shortest adjusted distance
           a = s*a + (1.-s)*ad;
+	  // shortest actual distance
           d = t*d + (1.-t)*dd;
       }
-      lowp float l = .5;
-      s = step(.01,d);
-      l = s*.5 + (1. - s)*1.;
-      //Sample the texture at the interpolated coordinate
-      lowp vec4 col = vec4(1.,0.,1.,1.);
 
-      col.rgb = col.rgb * w + (1. - w) * pcol.rgb;
-
-
-      // vec4(hsl2rgb(vec3(p/16.,1.,l)),1.);
-      col.rgb = col.rgb*s + (1. - s)*vec3(1.,0.,1.);
-
+      // highlight the player locations or boundaries
+      s = max( step(d,.01) , w);
     
-      //Set the output color to the texture color
-      gl_FragColor = col;
+      gl_FragColor = hcol * s + (1. - s)* pcol;
   }
     </script>
     <script id="shader-vs" type="x-shader/x-vertex">
