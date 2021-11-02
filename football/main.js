@@ -98,7 +98,7 @@ function start() {
     canvas.addEventListener('mousedown',doMouseDown);
     canvas.addEventListener('mousemove',doMouseMove);
     canvas.addEventListener('mouseup',doMouseUp);
-
+    
     canvas.addEventListener('touchstart',doTouchStart);
     canvas.addEventListener('touchmove',doTouchMove);
     canvas.addEventListener('touchend',doTouchEnd);

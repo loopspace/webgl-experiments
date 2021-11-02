@@ -171,7 +171,7 @@ Voronoi.prototype.draw = function(m) {
 
 Voronoi.prototype.setType = function(b) {
     if (b) {
-	this.numpoints = 16;
+	this.numpoints = 11;
     } else {
 	this.numpoints = 2;
     }
@@ -279,29 +279,41 @@ Voronoi.prototype.doMouseUp = function(e) {
 */
 Voronoi.prototype.doTouchStart = function(e) {
     this.touchIsMoving = false;
-    this.touchpt = convertPoint(e,this.mvpMatrix);
+    this.mousept = convertPoint(e,this.mvpMatrix);
+
+    var x,y,d,dd,p;
+    d = 4;
+    p = 0;
+    var pts;
+    if (this.numpoints == 2) {
+	pts = this.dblpoints;
+    } else {
+	pts = this.points;
+    }
+    for (var i = 0; i < this.numpoints; i++) {
+	x = pts[2*i];
+	y = pts[2*i+1];
+	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
+	if (dd < d) {
+	    d = dd;
+	    p = 2*i;
+	}
+    }
+    this.touchpt = p;
+    this.touchoffset = [this.mousept.x - pts[p],this.mousept.y - pts[p+1]];
+    this.touchpts = pts;
 }
 
 Voronoi.prototype.doTouchMove = function(e) {
     this.touchIsMoving = true;
     
-    var pt = this.convertToViewport(e);
-    var dx = pt.x - this.touchpt.x;
-    var dy = pt.y - this.touchpt.y;
-    
-    // Adjust the viewport
-    this.viewport[0] -= dx;
-    this.viewport[1] -= dy;
-    this.viewport[2] -= dx;
-    this.viewport[3] -= dy;
-    this.setCoordinates();
+    var pt = convertPoint(e,this.mvpMatrix);
+    this.touchpts[this.touchpt] = pt.x - this.touchoffset[0];
+    this.touchpts[this.touchpt+1] = pt.y - this.touchoffset[1];
+    this.draw();
 }
 
 Voronoi.prototype.doTouchEnd = function(e) {
-    if (!this.touchIsMoving) {
-	this.viewport = this.defaultViewport.slice();
-	this.setCoordinates();
-    }
     this.touchIsMoving = false;
 }
 
