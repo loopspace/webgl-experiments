@@ -105,16 +105,16 @@ function start() {
     
     window.addEventListener('resize',resetSize);
 
-    /*
-    var chkbx = document.getElementById('npts');
-    chkbx.addEventListener('change', setVoronoiType);
-    chkbx.checked = queryBoolean("numpoints",false);
-    setVoronoiTypeAux(chkbx);
+    var chkbx = document.getElementById('tmA');
+    chkbx.addEventListener('change', setFootballTeams);
+    chkbx.checked = queryBoolean("teamA",false);
 
-    chkbx = document.getElementById('linear');
-    chkbx.addEventListener('change', setVoronoiDistance);
-    chkbx.checked = queryBoolean("linear",true);
-    
+    chkbx = document.getElementById('tmB');
+    chkbx.addEventListener('change', setFootballTeams);
+    chkbx.checked = queryBoolean("teamB",true);
+
+    setFootballTeams();
+    /*
     setVoronoiDistanceAux(chkbx);
 
     var elt;
@@ -242,13 +242,20 @@ function initWebGL(canvas) {
     return gl;
 }
 
-function setVoronoiType(e) {
-    setVoronoiTypeAux(e.target);
-}
+function setFootballTeams() {
+    var chkbxA = document.getElementById('tmA');
+    var chkbxB = document.getElementById('tmB');
 
-function setVoronoiTypeAux(e) {
-    voronoi.setType(e.checked);
-    toggleElements()
+    var teams = 0;
+    if (chkbxA.checked) teams += 1;
+    if (chkbxB.checked) teams += 2;
+
+    if (teams == 0) {
+	teams = 1;
+	chkbxA.checked = true;
+    }
+
+    voronoi.setTeams(teams);
     drawScene();
 }
 

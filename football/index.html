@@ -15,16 +15,21 @@
   varying highp vec2 vCoordinate;
 
   uniform sampler2D pitch; // image of pitch for background
-  uniform lowp vec2 pts[11]; // positions of players
-  uniform lowp vec3 params[11]; // variations of distance
+  uniform lowp vec2 pts[22]; // positions of players
+  uniform lowp vec3 params[22]; // variations of distance
   uniform lowp float wgts;
   uniform lowp float dlys;
   uniform lowp float exts;
   uniform lowp float lin;
   uniform highp float aspect; // aspect ratio of pitch image
-      
+  uniform lowp float tms; // which teams to show
+  uniform lowp vec2 ball;
+  uniform lowp float bplyr;
+
   void main()
   {
+      lowp float st = 11. * (1. - mod(tms,2.));
+      lowp float ed = 11. * (1. + floor(tms/2.));
       lowp float d = 2.; // shortest actual distance
       lowp float dd; // actual distance to current point
       lowp float a = 2.; // alternative metric distance
@@ -36,13 +41,16 @@
       lowp float t;
       lowp float w = 0.; // for locating boundary between regions
       lowp vec2 tc;
+      lowp vec4 col;
 
       // pitch background
       lowp vec4 pcol = texture2D(pitch, vCoordinate);
       // highlight colour
-      lowp vec4 hcol = vec4(1.,0.,1.,1.);
+      lowp vec4 acol = vec4(1.,0.,0.,1.);
+      lowp vec4 bcol = vec4(.5,.5,1.,1.);
+      lowp vec4 ccol = vec4(1.,.5,1.,1.);
     
-      for (int i = 0; i < 11; i++) {
+      for (int i = 0; i < 22; i++) {
 	  // Adjust vector to i-th point to take aspect ratio into account
 	  tc = vCoordinate - pts[i];
 	  tc.x *= aspect;
@@ -59,15 +67,26 @@
 	      params[i].y;
 
 	  // s is 0 if the new adjusted distance is shorter
-	  s = 1. - (1. - step(a,ad));
+	  s = 1. - (1. - step(a,ad))
+	      * (1. - step(float(i),st))
+	      * (1. - step(ed,float(i)))
+	  ;
 	  // t is 0 if the new actual distance is shorter
-	  t = 1. - (1. - step(d,dd));
+	  t = 1. - (1. - step(d,dd))
+	      * (1. - step(float(i),st))
+	      * (1. - step(ed,float(i)))
+	  ;
 	  // w is 1 if there is a new shortest distance and it is
 	  // nearly the same as the current distance, or if the latest
 	  // distance is not the shortest but is very close
-	  w = (1.-s)*( step(abs(d*d - dd*dd),0.005 * distance(pts[i],pt)) )
-	      + s* max(w, step(abs(d*d - dd*dd),0.005 *
-			       distance(pts[i],pt)));
+	  w = (1.-s)*( step(abs(d*d - dd*dd),0.007 * distance(pts[i],pt)) )
+	      + s* max(w,
+		       step(abs(d*d - dd*dd),0.007 *
+			    distance(pts[i],pt)
+			   )
+		       * (1. - step(float(i),st))
+		       * (1. - step(ed,float(i)))
+		      );
 	  // adjust the index of the current point
           p = (1.-s)*(float (i)) + s*p;
 	  // adjust the location of the current point
@@ -78,10 +97,30 @@
           d = t*d + (1.-t)*dd;
       }
 
+      // highlight region with the ball
+      s = step(p,bplyr) * step(bplyr, p);
+      pcol = (1. - s) * pcol + s *
+	  (.6 * pcol + .4 *
+	   (floor(p/11.) * bcol
+	    + (1. - floor(p/11.)) * acol)
+	  );
+      
       // highlight the player locations or boundaries
       s = max( step(d,.01) , w);
-    
-      gl_FragColor = hcol * s + (1. - s)* pcol;
+
+      col = ( bcol * floor(p/11.)
+		       + acol * (1. - floor(p/11.)) ) * s
+      	  + (1. - s)* pcol;
+
+      // Distance to ball position
+      tc = vCoordinate - ball;
+      tc.x *= aspect;
+      dd = length(tc);
+
+      s = step(dd,0.01);
+      col = s * vec4(1.) + (1. - s) * col;
+      
+      gl_FragColor = col;
   }
     </script>
     <script id="shader-vs" type="x-shader/x-vertex">
@@ -108,6 +147,86 @@
       Your browser doesn't appear to support the 
       <code>&lt;canvas&gt;</code> element.
     </canvas>
+    </div>
+    <div id="info">
+      <form id="vform"></form>
+      <table>
+	<tr>
+	  <th colspan="2">Football Configuration</th>
+	</tr>
+	<tr>
+	  <td>Team A</td>
+	  <td id="teamA" class="rightalign"><input type="checkbox" id="tmA" form="vform"></td>
+	</tr>
+	<tr>
+	  <td>Team B</td>
+	  <td id="teamB" class="rightalign"><input type="checkbox"
+	  id="tmB" form="vform" checked="checked"></td>
+	</tr>
+	<!--
+	<tr>
+	  <td>Parameters</td><td></td>
+	</tr>
+	  <tr class="linear">
+	    <td class="centrealign" colspan="2">
+	      <math xmlns='http://www.w3.org/1998/Math/MathML'
+	      display='inline'><semantics><mrow><mi>a</mi><mi>x</mi><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>a
+		    x + b</annotation></semantics></math>
+	    </td>
+	  </tr>
+	<tr class="log">
+	  <td class="centrealign" colspan="2">
+	    <math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mo lspace="verythinmathspace" rspace="0em">&minus;</mo><mi>a</mi><mi>log</mi><mo stretchy="false">(</mo><mn>1</mn><mo>&minus;</mo><mi>c</mi><mi>x</mi><mo stretchy="false">)</mo><mo>+</mo><mi>b</mi></mrow><annotation encoding='application/x-tex'>&#x2d;a \log(1 &#x2d; c x) + b</annotation></semantics></math>
+	    </td>
+	  </tr>
+	<tr class="singleparam">
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>a</mi></mrow><annotation encoding='application/x-tex'>a</annotation></semantics></math>:</td>
+	  <td><input type="text" id="wgt" form="vform" class="smallinput"></td>
+	</tr>
+	<tr class="singleparam">
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>b</mi></mrow><annotation encoding='application/x-tex'>b</annotation></semantics></math>:</td>
+	  <td><input type="text" id="dis" form="vform" class="smallinput"></td>
+	</tr>
+	<tr id="extent" class="log singleparam">
+	  <td class="rightalign"><math xmlns='http://www.w3.org/1998/Math/MathML' display='inline'><semantics><mrow><mi>c</mi></mrow><annotation encoding='application/x-tex'>c</annotation></semantics></math>:</td>
+	  <td><input type="text" id="qnt" form="vform" class="smallinput"></td>
+	</tr>
+	  <tr class="multipleparam">
+	    <td>
+	      Use Weights
+	    </td>
+	    <td>
+	      <input type="checkbox" id="wgts">
+	    </td>
+	  </tr>
+	  <tr class="multipleparam">
+	    <td>
+	      Use Delays
+	    </td>
+	    <td>
+	      <input type="checkbox" id="dlys">
+	    </td>
+	  </tr>
+	  <tr id="extents" class="log multipleparam">
+	    <td>
+	      Use Extents
+	    </td>
+	    <td>
+	      <input type="checkbox" id="exts">
+	    </td>
+	  </tr>
+	  <tr class="multipleparam">
+	    <td colspan="2">
+	      <button type="button" id="regenerate">Regenerate Parameters</button>
+	    </td>
+	  </tr>
+	  <tr>
+	    <td colspan="2">
+	      <a id="dl" download="Voronoi.png" href="#" class="button">Download Diagram</a>
+	    </td>
+	  </tr>
+-->
+      </table>
     </div>
     <div id="help" class="help">
       <h3>Voronoi Football</h3>

@@ -19,6 +19,17 @@ function Voronoi() {
 	0.4,0.6,
 	0.4,0.4,
 	0.27,0.5,
+	0.1,0.5,
+	0.3,0.3,
+	0.3,0.7,
+	0.25,0.5,
+	0.7,0.2,
+	0.7,0.8,
+	0.48,0.35,
+	0.48,0.65,
+	0.6,0.6,
+	0.6,0.4,
+	0.73,0.5,
     ]);
     var params = [];
     for (var i = 0; i < 16; i++) {
@@ -27,7 +38,10 @@ function Voronoi() {
 	params.push(1+Math.random())
     }
     this.params = new Float32Array(params);
-    this.numpoints = 11;
+    this.teams = 1;
+    this.ballPosition = new Float32Array([.5,.5]);
+    this.ballPlayer = 0;
+    this.setBallPlayer();
     this.useWeights = false;
     this.useDelays = false;
     this.useExtents = false;
@@ -86,7 +100,9 @@ Voronoi.prototype.initBuffers = function() {
 //    this.parameterUniform = gl.getUniformLocation(this.shaderProgram,'params');
     this.pointsUniform = gl.getUniformLocation(this.shaderProgram,'pts');
     this.paramsUniform = gl.getUniformLocation(this.shaderProgram,'params');
-    this.numPointsUniform = gl.getUniformLocation(this.shaderProgram,'np');
+    this.teamsUniform = gl.getUniformLocation(this.shaderProgram,'tms');
+    this.ballPlayerUniform = gl.getUniformLocation(this.shaderProgram,'bplyr');
+    this.ballPositionUniform = gl.getUniformLocation(this.shaderProgram,'ball');
     this.useWeightsUniform = gl.getUniformLocation(this.shaderProgram,'wgts');
     this.useDelaysUniform = gl.getUniformLocation(this.shaderProgram,'dlys');
     this.useExtentsUniform = gl.getUniformLocation(this.shaderProgram,'exts');
@@ -129,7 +145,9 @@ Voronoi.prototype.doBindings = function() {
     } else {
 	gl.uniform1f(this.isLinearUniform, 0);
     }
-    gl.uniform1f(this.numPointsUniform, this.numpoints);
+    gl.uniform1f(this.teamsUniform, this.teams);
+    gl.uniform2fv(this.ballPositionUniform, this.ballPosition);
+    gl.uniform1f(this.ballPlayerUniform, this.ballPlayer);
 
     this.bindTexture();
 }
@@ -169,16 +187,42 @@ Voronoi.prototype.draw = function(m) {
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
 }
 
-Voronoi.prototype.setType = function(b) {
-    if (b) {
-	this.numpoints = 11;
-    } else {
-	this.numpoints = 2;
-    }
+Voronoi.prototype.setTeams = function(b) {
+    this.teams = b;
+    this.setBallPlayer();
 }
 
 Voronoi.prototype.setLinear = function(b) {
     this.linear = b;
+}
+
+Voronoi.prototype.setBallPlayer = function() {
+    var x,y,d,dd,p,st,ed;
+
+    d = 4;
+    p = 0;
+    
+    if ( (this.teams & 1) == 1) {
+	st = 0;
+    } else {
+	st = 11;
+    }
+    if ( (this.teams & 2) == 2) {
+	ed = 22;
+    } else {
+	ed = 11;
+    }
+
+    for (var i = st; i < ed; i++) {
+	x = this.points[2*i];
+	y = this.points[2*i+1];
+	dd = Math.pow(this.ballPosition[0] - x,2) + Math.pow(this.ballPosition[1] - y,2);
+	if (dd < d) {
+	    d = dd;
+	    p = i;
+	}
+    }
+    this.ballPlayer = p;
 }
 
 Voronoi.prototype.setParams = function(a,b,c,d,e,f) {
@@ -234,18 +278,25 @@ Voronoi.prototype.doMouseDown = function(e) {
 	return;
     this.mouseIsMoving = false;
     this.mousept = convertPoint(e,this.mvpMatrix);
-    var x,y,d,dd,p;
-    d = 4;
-    p = 0;
-    var pts;
-    if (this.numpoints == 2) {
-	pts = this.dblpoints;
+    var x,y,d,dd,p,st,ed;
+
+    d = Math.pow(this.mousept.x - this.ballPosition[0],2) + Math.pow(this.mousept.y - this.ballPosition[1],2);
+    p = -1;
+    
+    if ( (this.teams & 1) == 1) {
+	st = 0;
     } else {
-	pts = this.points;
+	st = 11;
     }
-    for (var i = 0; i < this.numpoints; i++) {
-	x = pts[2*i];
-	y = pts[2*i+1];
+    if ( (this.teams & 2) == 2) {
+	ed = 22;
+    } else {
+	ed = 11;
+    }
+
+    for (var i = st; i < ed; i++) {
+	x = this.points[2*i];
+	y = this.points[2*i+1];
 	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
 	if (dd < d) {
 	    d = dd;
@@ -253,8 +304,17 @@ Voronoi.prototype.doMouseDown = function(e) {
 	}
     }
     this.touchpt = p;
-    this.touchoffset = [this.mousept.x - pts[p],this.mousept.y - pts[p+1]];
-    this.touchpts = pts;
+    if (p == -1) {
+	this.touchOffset = [
+	    this.mousept.x - this.ballPosition[0],
+	    this.mousept.y - this.ballPosition[1]
+	];
+    } else {
+	this.touchOffset = [
+	    this.mousept.x - this.points[p],
+	    this.mousept.y - this.points[p+1]
+	];
+    }
 }
 
 Voronoi.prototype.doMouseMove = function(e) {
@@ -263,8 +323,14 @@ Voronoi.prototype.doMouseMove = function(e) {
     this.mouseIsMoving = true;
     
     var pt = convertPoint(e,this.mvpMatrix);
-    this.touchpts[this.touchpt] = pt.x - this.touchoffset[0];
-    this.touchpts[this.touchpt+1] = pt.y - this.touchoffset[1];
+    if (this.touchpt == -1) {
+	this.ballPosition[0] = pt.x - this.touchOffset[0];
+	this.ballPosition[1] = pt.y - this.touchOffset[1];
+    } else {
+	this.points[this.touchpt] = pt.x - this.touchOffset[0];
+	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
+    }
+    this.setBallPlayer();
     this.draw();
 }
 
@@ -281,18 +347,22 @@ Voronoi.prototype.doTouchStart = function(e) {
     this.touchIsMoving = false;
     this.mousept = convertPoint(e,this.mvpMatrix);
 
-    var x,y,d,dd,p;
-    d = 4;
-    p = 0;
-    var pts;
-    if (this.numpoints == 2) {
-	pts = this.dblpoints;
+    var x,y,d,dd,p,st,ed;
+    d = Math.pow(this.mousept.x - this.ballPosition[0],2) + Math.pow(this.mousept.y - this.ballPosition[1],2);
+    p = -1;
+    if (this.teams & 1 == 1) {
+	st = 0;
     } else {
-	pts = this.points;
+	st = 11;
     }
-    for (var i = 0; i < this.numpoints; i++) {
-	x = pts[2*i];
-	y = pts[2*i+1];
+    if (this.teams & 2 == 2) {
+	ed = 22;
+    } else {
+	ed = 11;
+    }
+    for (var i = st; i < ed; i++) {
+	x = this.points[2*i];
+	y = this.points[2*i+1];
 	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
 	if (dd < d) {
 	    d = dd;
@@ -300,16 +370,31 @@ Voronoi.prototype.doTouchStart = function(e) {
 	}
     }
     this.touchpt = p;
-    this.touchoffset = [this.mousept.x - pts[p],this.mousept.y - pts[p+1]];
-    this.touchpts = pts;
+    if (p == -1) {
+	this.touchOffset = [
+	    this.mousept.x - this.ballPosition[0],
+	    this.mousept.y - this.ballPosition[1]
+	];
+    } else {
+	this.touchOffset = [
+	    this.mousept.x - this.points[p],
+	    this.mousept.y - this.points[p+1]
+	];
+    }
 }
 
 Voronoi.prototype.doTouchMove = function(e) {
     this.touchIsMoving = true;
     
     var pt = convertPoint(e,this.mvpMatrix);
-    this.touchpts[this.touchpt] = pt.x - this.touchoffset[0];
-    this.touchpts[this.touchpt+1] = pt.y - this.touchoffset[1];
+    if (this.touchpt == -1) {
+	this.ballPosition[0] = pt.x - this.touchOffset[0];
+	this.ballPosition[1] = pt.y - this.touchOffset[1];
+    } else {
+	this.points[this.touchpt] = pt.x - this.touchOffset[0];
+	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
+    }
+    this.setBallPlayer();
     this.draw();
 }
 
