@@ -5,6 +5,7 @@
     <title>webgl Experiments: Voronoi Diagrams</title>
     <script src="../utilities/sylvester.js"></script>
     <script src="../utilities/glUtils.js"></script>
+    <script src="image.js"></script>
     <script src="voronoi.js"></script>
     <script src="main.js"></script>
     <link href="https://fonts.googleapis.com/css?family=Sunflower:300"
@@ -14,7 +15,7 @@
   //The interpolated coordinate for this fragment
   varying highp vec2 vCoordinate;
 
-  uniform sampler2D pitch; // image of pitch for background
+  uniform sampler2D texture; // image of pitch for background
   uniform lowp vec2 pts[22]; // positions of players
   uniform lowp vec3 params[22]; // variations of distance
   uniform lowp float wgts;
@@ -23,8 +24,9 @@
   uniform lowp float lin;
   uniform highp float aspect; // aspect ratio of pitch image
   uniform lowp float tms; // which teams to show
-  uniform lowp vec2 ball;
-  uniform lowp float bplyr;
+  uniform lowp vec2 ball; // position of ball
+  uniform lowp float bplyr; // index of player closest to ball
+  uniform lowp float regions; // colour all regions or just wireframe
 
   void main()
   {
@@ -42,13 +44,13 @@
       lowp float w = 0.; // for locating boundary between regions
       lowp vec2 tc;
       lowp vec4 col;
+      lowp vec4 tcol;
 
       // pitch background
-      lowp vec4 pcol = texture2D(pitch, vCoordinate);
+      lowp vec4 pcol = texture2D(texture, vCoordinate);
       // highlight colour
-      lowp vec4 acol = vec4(1.,0.,0.,1.);
-      lowp vec4 bcol = vec4(.5,.5,1.,1.);
-      lowp vec4 ccol = vec4(1.,.5,1.,1.);
+      lowp vec4 red = vec4(1.,0.,0.,1.);
+      lowp vec4 blue = vec4(0.,0.,1.,1.);
     
       for (int i = 0; i < 22; i++) {
 	  // Adjust vector to i-th point to take aspect ratio into account
@@ -101,16 +103,19 @@
       s = step(p,bplyr) * step(bplyr, p);
       pcol = (1. - s) * pcol + s *
 	  (.6 * pcol + .4 *
-	   (floor(p/11.) * bcol
-	    + (1. - floor(p/11.)) * acol)
+	   (floor(p/11.) * red
+	    + (1. - floor(p/11.)) * blue)
 	  );
+
+      // set the team colour
+      tcol = ( red * floor(p/11.)
+	      + blue * (1. - floor(p/11.)) ); 
       
       // highlight the player locations or boundaries
       s = max( step(d,.01) , w);
-
-      col = ( bcol * floor(p/11.)
-		       + acol * (1. - floor(p/11.)) ) * s
-      	  + (1. - s)* pcol;
+      
+      col =  tcol * s
+      	  + (1. - s) * pcol;
 
       // Distance to ball position
       tc = vCoordinate - ball;
@@ -119,6 +124,9 @@
 
       s = step(dd,0.01);
       col = s * vec4(1.) + (1. - s) * col;
+
+      // If regions is requested, just show those
+      col = regions * tcol + (1. - regions) * col;
       
       gl_FragColor = col;
   }
@@ -144,6 +152,17 @@
     </div>
     <div id="container">
     <canvas id="glCanvas" width="640" height="480">
+      Your browser doesn't appear to support the 
+      <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    </div>
+    <div id="offscreen">
+    <canvas id="imgCanvas" width="640" height="480">
+      Your browser doesn't appear to support the 
+      <code>&lt;canvas&gt;</code> element.
+    </canvas>
+    <img id="regions">
+    <canvas id="regionCanvas" width="1024" height="1024">
       Your browser doesn't appear to support the 
       <code>&lt;canvas&gt;</code> element.
     </canvas>

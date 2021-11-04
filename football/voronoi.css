@@ -30,6 +30,10 @@ body {
     margin: 0 auto;
 }
 
+#offscreen {
+    display: none;
+}
+
 .help {
     position: fixed;
     right: 0px;

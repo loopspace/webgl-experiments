@@ -1,12 +1,6 @@
 
 // Voronoi class
-function Voronoi() {
-    this.coordinates = new Float32Array([
-	1.0, 1.0,
-	0.0, 1.0,
-	1.0, 0.0,
-	0.0, 0.0
-    ]);
+function Voronoi(gls) {
     this.points = new Float32Array([
 	0.9,0.5,
 	0.7,0.3,
@@ -42,148 +36,46 @@ function Voronoi() {
     this.ballPosition = new Float32Array([.5,.5]);
     this.ballPlayer = 0;
     this.setBallPlayer();
-    this.useWeights = false;
-    this.useDelays = false;
-    this.useExtents = false;
-    this.linear = true;
-    this.image = document.getElementById('pitch');
-    this.aspect = this.image.width / this.image.height;
-    this.initShaders();
-    this.initBuffers();
-}
+    this.weights = 0;
+    this.delays = 0;
+    this.extents = 0;
+    this.linear = 1;
+    this.regions = 0;
+    this.texture = document.getElementById('pitch');
+    this.aspect = this.texture.width / this.texture.height;
+    this.images = [];
 
-Voronoi.prototype.initShaders = function() {
-    var fragmentShader = getShader(gl,'shader-fs');
-    var vertexShader = getShader(gl, 'shader-vs');
-  
-    // Create the shader program
-  
-    var shaderProgram = gl.createProgram();
-    gl.attachShader(shaderProgram, vertexShader);
-    gl.attachShader(shaderProgram, fragmentShader);
-    gl.linkProgram(shaderProgram);
-  
-    // If creating the shader program failed, alert
-  
-    if (!gl.getProgramParameter(shaderProgram, gl.LINK_STATUS)) {
-	console.log('Unable to initialize the shader program: ' + gl.getProgramInfoLog(shaderProgram));
+    this.buffers = [
+	['pts', '2fv', 'points'],
+	['params', '3fv', 'params'],
+	['tms', '1f', 'teams'],
+	['regions', '1f', 'regions'],
+	['bplyr', '1f', 'ballPlayer'],
+	['ball', '2fv', 'ballPosition'],
+	['wgts', '1f', 'weights'],
+	['dlys', '1f', 'delays'],
+	['exts', '1f', 'extents'],
+	['lin', '1f', 'linear'],
+	['aspect', '1f', 'aspect'],
+    ];
+    
+    for (var i = 0; i < gls.length; i++) {
+	this.images.push(
+	    new Image(
+		gls[i],
+		this
+	    )
+	);
     }
-  
-    gl.useProgram(shaderProgram);
-
-    this.vertexPositionAttribute = gl.getAttribLocation(shaderProgram, 'aVertexPosition');
-    gl.enableVertexAttribArray(this.vertexPositionAttribute);
-    
-    this.vertexCoordinateAttribute = gl.getAttribLocation(shaderProgram, 'aVertexCoordinate');
-    gl.enableVertexAttribArray(this.vertexCoordinateAttribute);
-
-    this.shaderProgram = shaderProgram;
 }
 
-Voronoi.prototype.initBuffers = function() {
-    this.vertices = new Float32Array([
-	1.0,  1.0,  0.0, // top right on screen
-	-1.0, 1.0,  0.0, // top left on screen
-	1.0,  -1.0, 0.0, // bottom right on screen
-	-1.0, -1.0, 0.0  // bottom left on screen
-    ]);
-
-    gl.useProgram(this.shaderProgram);
-    
-    this.squareVerticesBuffer = gl.createBuffer();
-    this.squareVerticesCoordinateBuffer = gl.createBuffer();
-
-    this.texture = gl.createTexture();
-
-    this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'aVertexCoordinate');
-
-//    this.parameterUniform = gl.getUniformLocation(this.shaderProgram,'params');
-    this.pointsUniform = gl.getUniformLocation(this.shaderProgram,'pts');
-    this.paramsUniform = gl.getUniformLocation(this.shaderProgram,'params');
-    this.teamsUniform = gl.getUniformLocation(this.shaderProgram,'tms');
-    this.ballPlayerUniform = gl.getUniformLocation(this.shaderProgram,'bplyr');
-    this.ballPositionUniform = gl.getUniformLocation(this.shaderProgram,'ball');
-    this.useWeightsUniform = gl.getUniformLocation(this.shaderProgram,'wgts');
-    this.useDelaysUniform = gl.getUniformLocation(this.shaderProgram,'dlys');
-    this.useExtentsUniform = gl.getUniformLocation(this.shaderProgram,'exts');
-    this.isLinearUniform = gl.getUniformLocation(this.shaderProgram,'lin');
-    this.aspectUniform = gl.getUniformLocation(this.shaderProgram,'aspect');
-}
-
-Voronoi.prototype.doBindings = function() {
-    
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesBuffer);
-    gl.vertexAttribPointer(this.vertexPositionAttribute, 3, gl.FLOAT, false, 0, 0);
-    gl.bufferData(gl.ARRAY_BUFFER, this.vertices, gl.STATIC_DRAW);
-
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.squareVerticesCoordinateBuffer);
-    gl.vertexAttribPointer(this.vertexCoordinateAttribute, 2, gl.FLOAT, false, 0, 0);
-    gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
-    
-    //    gl.uniform2fv(this.parameterUniform, this.parameters);
-    gl.uniform2fv(this.pointsUniform, this.points);
-    gl.uniform3fv(this.paramsUniform, this.params);
-    gl.uniform1f(this.aspectUniform, this.aspect);
-    if (this.useWeights) {
-	gl.uniform1f(this.useWeightsUniform, 1);
+Voronoi.prototype.draw = function(i) {
+    if (i == 0) {
+	this.regions = 0;
     } else {
-	gl.uniform1f(this.useWeightsUniform, 0);
+	this.regions = 1;
     }
-    if (this.useDelays) {
-	gl.uniform1f(this.useDelaysUniform, 1);
-    } else {
-	gl.uniform1f(this.useDelaysUniform, 0);
-    }
-    if (this.useExtents) {
-	gl.uniform1f(this.useExtentsUniform, 1);
-    } else {
-	gl.uniform1f(this.useExtentsUniform, 0);
-    }
-
-    if (this.linear) {
-	gl.uniform1f(this.isLinearUniform, 1);
-    } else {
-	gl.uniform1f(this.isLinearUniform, 0);
-    }
-    gl.uniform1f(this.teamsUniform, this.teams);
-    gl.uniform2fv(this.ballPositionUniform, this.ballPosition);
-    gl.uniform1f(this.ballPlayerUniform, this.ballPlayer);
-
-    this.bindTexture();
-}
-
-Voronoi.prototype.bindTexture = function() {
-    gl.activeTexture(gl.TEXTURE0);
-    gl.bindTexture(gl.TEXTURE_2D, this.texture);
-    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, this.image);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    // gl.NEAREST is also allowed, instead of gl.LINEAR, as neither mipmap.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    // Prevents s-coordinate wrapping (repeating).
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    // Prevents t-coordinate wrapping (repeating).
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.uniform1i(gl.getUniformLocation(this.shaderProgram, 'pitch'), 0);
-//    gl.bindTexture(gl.TEXTURE_2D, null);
-
-}
-
-Voronoi.prototype.enableProgram = function() {
-    gl.useProgram(this.shaderProgram);
-
-    gl.enableVertexAttribArray(this.vertexPositionAttribute);    
-    gl.enableVertexAttribArray(this.vertexCoordinateAttribute);
-    
-}
-
-Voronoi.prototype.draw = function(m) {
-    this.enableProgram();
-    this.doBindings();
-
-    setMatrixUniforms(this.shaderProgram);
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
-
+    this.images[i].draw();
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
 }
 
@@ -193,7 +85,11 @@ Voronoi.prototype.setTeams = function(b) {
 }
 
 Voronoi.prototype.setLinear = function(b) {
-    this.linear = b;
+    if (b) {
+	this.linear = 1;
+    } else {
+	this.linear = 0;
+    }
 }
 
 Voronoi.prototype.setBallPlayer = function() {
@@ -242,9 +138,21 @@ Voronoi.prototype.setParams = function(a,b,c,d,e,f) {
     this.dblparams[3] = a;
     this.dblparams[4] = b;
     this.dblparams[5] = c;
-    this.useWeights = d;
-    this.useDelays = e;
-    this.useExtents = f;
+    if (d) {
+	this.weights = 1;
+    } else {
+	this.weights = 0;
+    }
+    if (e) {
+	this.delays = 1;
+    } else {
+	this.delays = 0;
+    }
+    if (f) {
+	this.extents = 1;
+    } else {
+	this.extents = 0;
+    }
 }
 
 Voronoi.prototype.regenerate = function() {
@@ -331,7 +239,6 @@ Voronoi.prototype.doMouseMove = function(e) {
 	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
     }
     this.setBallPlayer();
-    this.draw();
 }
 
 Voronoi.prototype.doMouseUp = function(e) {
@@ -350,12 +257,12 @@ Voronoi.prototype.doTouchStart = function(e) {
     var x,y,d,dd,p,st,ed;
     d = Math.pow(this.mousept.x - this.ballPosition[0],2) + Math.pow(this.mousept.y - this.ballPosition[1],2);
     p = -1;
-    if (this.teams & 1 == 1) {
+    if ((this.teams & 1) == 1) {
 	st = 0;
     } else {
 	st = 11;
     }
-    if (this.teams & 2 == 2) {
+    if ((this.teams & 2) == 2) {
 	ed = 22;
     } else {
 	ed = 11;
@@ -395,57 +302,10 @@ Voronoi.prototype.doTouchMove = function(e) {
 	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
     }
     this.setBallPlayer();
-    this.draw();
 }
 
 Voronoi.prototype.doTouchEnd = function(e) {
     this.touchIsMoving = false;
-}
-
-// Auxiliary functions
-
-function getShader(gl, ids, type) {
-    var shaderScript, theSource, currentChild, shader;
-
-    theSource = '';
-
-    if (typeof ids === "string")
-	ids = [ids];
-
-    for (var i = 0; i < ids.length; i++) {
-	shaderScript = document.getElementById(ids[i]);
-  
-	if (!shaderScript) {
-	    return null;
-	}
-  
-	theSource += shaderScript.text;
-    }
-
-    if (!type) {
-	if (shaderScript.type == 'x-shader/x-fragment') {
-	    type = gl.FRAGMENT_SHADER;
-	} else if (shaderScript.type == 'x-shader/x-vertex') {
-	    type = gl.VERTEX_SHADER;
-	} else {
-	    // Unknown shader type
-	    return null;
-	}
-    }
-    shader = gl.createShader(type);
-    gl.shaderSource(shader, theSource);
-    
-    // Compile the shader program
-    gl.compileShader(shader);  
-    
-    // See if it compiled successfully
-    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {  
-	console.log('An error occurred compiling the shaders: ' + gl.getShaderInfoLog(shader));  
-	gl.deleteShader(shader);
-	return null;  
-    }
-    
-    return shader;
 }
 
 var corners = [
@@ -496,3 +356,20 @@ function convertPoint(e,m) {
 
     return {x: x, y: y};
 }
+
+
+// This needs to have a simple shader, not the voronoi one
+
+function Average(gl) {
+    this.texture = document.getElementById('regions');
+    this.buffers = [];
+    this.image = new Image(gl,this);
+    this.gl = gl;
+}
+
+
+Average.prototype.draw = function() {
+    this.image.draw();
+    this.gl.generateMipmap(gl.TEXTURE_2D);
+}
+

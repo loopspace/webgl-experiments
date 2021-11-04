@@ -1,9 +1,15 @@
 var gl; // A global variable for the WebGL context
+var imggl; // A global variable for the WebGL context
+var reggl;
 
 var width;
 var height;
+var imgsize;
 var aspect;
 var pitchAspect;
+
+var voronoi;
+var average;
 
 // Matrix stack
 var matrixStack = [];
@@ -48,6 +54,8 @@ function queryBoolean(key,def) {
 
 function start() {
     var canvas = document.getElementById('glCanvas');
+    var imgcanvas = document.getElementById('imgCanvas');
+    var regcanvas = document.getElementById('regionCanvas');
     var pitch = document.getElementById('pitch');
 
     pitchAspect = pitch.width/pitch.height;
@@ -73,25 +81,30 @@ function start() {
     canvas.width = width;
     canvas.height = height;
 
+    imgsize = Math.max(width, height);
+
+    var ptwo = 1;
+    while (imgsize > 0) {
+	imgsize >>= 1;
+	ptwo <<= 1;
+    }
+    imgsize = ptwo;
+    
+    imgcanvas.width = imgsize;
+    imgcanvas.height = imgsize;
+
     // Initialize the GL context
     gl = initWebGL(canvas);
+    imggl = initWebGL(imgcanvas);
+    reggl = initWebGL(regcanvas);
 
     // Only continue if WebGL is available and working
-    if (!gl) {
+    if (!gl || !imggl || !reggl) {
 	return;
     }
 
-
-    // Set clear color to black, fully opaque
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    // Enable depth testing
-    gl.enable(gl.DEPTH_TEST);
-    // Near things obscure far things
-    gl.depthFunc(gl.LEQUAL);
-    // Clear the color as well as the depth buffer.
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    voronoi = new Voronoi();
+    voronoi = new Voronoi([gl,imggl]);
+    average = new Average(reggl);
 
     drawScene();
     canvas.addEventListener('wheel',doWheel);
@@ -225,11 +238,12 @@ function resetSize() {
     canvas.width = width;
     canvas.height = height;
     gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+    imggl.viewport(0, 0, imggl.canvas.width, imggl.canvas.height);
     drawScene();
 }
 
 function initWebGL(canvas) {
-    gl = null;
+    var gl = null;
   
     // Try to grab the standard context. If it fails, fallback to experimental.
     gl = canvas.getContext('webgl', {preserveDrawingBuffer: true}) || canvas.getContext('experimental-webgl', {preserveDrawingBuffer: true});
@@ -238,6 +252,15 @@ function initWebGL(canvas) {
     if (!gl) {
 	alert('Unable to initialize WebGL. Your browser may not support it.');
     }
+
+    // Set clear color to black, fully opaque
+    gl.clearColor(0.0, 0.0, 0.0, 1.0);
+    // Enable depth testing
+    gl.enable(gl.DEPTH_TEST);
+    // Near things obscure far things
+    gl.depthFunc(gl.LEQUAL);
+    // Clear the color as well as the depth buffer.
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
   
     return gl;
 }
@@ -362,20 +385,76 @@ function showParametersAux(f) {
 }
 
 function drawScene() {
-//    julia.setParameter(mandel.getCentre());
     
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
-    //    perspectiveMatrix = makePerspective(45, width/height, 0.1, 100.0);
     perspectiveMatrix = makeOrtho(0,width,0,height,-1,100);
 
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
-    //    mvScale([aspect * pitchAspect,aspect,1]);
     mvScale([width/2,height/2,1]);
-    voronoi.draw();
+    voronoi.draw(0);
     popMatrix();
+
+    
+    imggl.clear(imggl.COLOR_BUFFER_BIT | imggl.DEPTH_BUFFER_BIT);
+    clearMatrices();
+
+    perspectiveMatrix = makeOrtho(0,width,0,height,-1,100);
+
+    pushMatrix();
+    mvTranslate([width/2,height/2,0]);
+    mvScale([width/2,height/2,1]);
+    voronoi.draw(1);
+    popMatrix();
+
+    setImage();
+}
+
+function setImage() {
+    var canvas = document.getElementById('imgCanvas');
+    var prev = document.getElementById('regions');
+    canvas.toBlob(function(b) {
+        prev.src = window.URL.createObjectURL(b);
+        prev.addEventListener('load',function() {
+            window.URL.revokeObjectURL(b);
+	    drawAverage();
+        }, {once: true});
+    });
+}
+
+function drawAverage() {
+    reggl.clear(reggl.COLOR_BUFFER_BIT | reggl.DEPTH_BUFFER_BIT);
+    clearMatrices();
+
+    perspectiveMatrix = makeOrtho(0,width,0,height,-1,100);
+
+    pushMatrix();
+    mvTranslate([width/2,height/2,0]);
+    mvScale([width/2,height/2,1]);
+    average.draw();
+    popMatrix();
+
+    var w = reggl.drawingBufferWidth;
+    var h = reggl.drawingBufferHeight;
+
+    w = Math.floor(w/2);
+    h = Math.floor(h/2);
+
+    var pixels = new Uint8Array(
+	4
+    );
+    reggl.readPixels(
+	w,
+	h,
+	1,
+	1,
+	reggl.RGBA,
+	reggl.UNSIGNED_BYTE,
+	pixels
+    );
+    console.log(pixels);
 }
 
 function multMatrix(m) {
@@ -390,7 +469,7 @@ function mvScale(v) {
     multMatrix(Matrix.Scale($V([v[0], v[1], v[2]])).ensure4x4());
 }
 
-function setMatrixUniforms(s) {
+function setMatrixUniforms(s,gl) {
     var pUniform = gl.getUniformLocation(s, "uPMatrix");
     gl.uniformMatrix4fv(pUniform, false, new Float32Array(perspectiveMatrix.flatten()));
 
