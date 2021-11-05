@@ -16,29 +16,29 @@
   varying highp vec2 vCoordinate;
 
   uniform sampler2D texture; // image of pitch for background
-  uniform lowp vec2 pts[22]; // positions of players
+  uniform lowp vec2 points[22]; // positions of players
   uniform lowp vec3 params[22]; // variations of distance
-  uniform lowp float wgts;
-  uniform lowp float dlys;
-  uniform lowp float exts;
-  uniform lowp float lin;
+  uniform lowp float weights;
+  uniform lowp float delays;
+  uniform lowp float extents;
+  uniform lowp float linear;
   uniform highp float aspect; // aspect ratio of pitch image
-  uniform lowp float tms; // which teams to show
-  uniform lowp vec2 ball; // position of ball
-  uniform lowp float bplyr; // index of player closest to ball
+  uniform lowp float teams; // which teams to show
+  uniform lowp vec2 ballPosition; // position of ball
+  uniform lowp float ballPlayer; // index of player closest to ball
   uniform lowp float regions; // colour all regions or just wireframe
 
   void main()
   {
-      lowp float st = 11. * (1. - mod(tms,2.));
-      lowp float ed = 11. * (1. + floor(tms/2.));
+      lowp float st = 11. * (1. - mod(teams,2.));
+      lowp float ed = 11. * (1. + floor(teams/2.));
       lowp float d = 2.; // shortest actual distance
       lowp float dd; // actual distance to current point
       lowp float a = 2.; // alternative metric distance
       lowp float ad; // alternative metric distance 
       lowp float ld; // variations of distance
       lowp float p = 0.; // index of nearest player
-      lowp vec2 pt = pts[0]; // location of nearest player
+      lowp vec2 pt = points[0]; // location of nearest player
       lowp float s;
       lowp float t;
       lowp float w = 0.; // for locating boundary between regions
@@ -54,18 +54,18 @@
     
       for (int i = 0; i < 22; i++) {
 	  // Adjust vector to i-th point to take aspect ratio into account
-	  tc = vCoordinate - pts[i];
+	  tc = vCoordinate - points[i];
 	  tc.x *= aspect;
 	  // Distance to current player
 	  dd = length(tc);
 
 	  // Adjusted distance, if requested
-	  ld = -(1. - lin) * log(
+	  ld = -(1. - linear) * log(
 	      max(.0001,
-		  (1. - (1. + exts * (params[i].z - 1.)) * dd)))
-	      + lin * dd;
+		  (1. - (1. + extents * (params[i].z - 1.)) * dd)))
+	      + linear * dd;
 	  
-	  ad = (1. + wgts * (params[i].x - 1.)) * ld + dlys *
+	  ad = (1. + weights * (params[i].x - 1.)) * ld + delays *
 	      params[i].y;
 
 	  // s is 0 if the new adjusted distance is shorter
@@ -81,10 +81,10 @@
 	  // w is 1 if there is a new shortest distance and it is
 	  // nearly the same as the current distance, or if the latest
 	  // distance is not the shortest but is very close
-	  w = (1.-s)*( step(abs(d*d - dd*dd),0.007 * distance(pts[i],pt)) )
+	  w = (1.-s)*( step(abs(d*d - dd*dd),0.007 * distance(points[i],pt)) )
 	      + s* max(w,
 		       step(abs(d*d - dd*dd),0.007 *
-			    distance(pts[i],pt)
+			    distance(points[i],pt)
 			   )
 		       * (1. - step(float(i),st))
 		       * (1. - step(ed,float(i)))
@@ -92,7 +92,7 @@
 	  // adjust the index of the current point
           p = (1.-s)*(float (i)) + s*p;
 	  // adjust the location of the current point
-	  pt = (1.-s)*pts[i] + s*pt;
+	  pt = (1.-s)*points[i] + s*pt;
 	  // shortest adjusted distance
           a = s*a + (1.-s)*ad;
 	  // shortest actual distance
@@ -100,7 +100,8 @@
       }
 
       // highlight region with the ball
-      s = step(p,bplyr) * step(bplyr, p);
+      s = step(p,ballPlayer) * step(ballPlayer, p);
+
       pcol = (1. - s) * pcol + s *
 	  (.6 * pcol + .4 *
 	   (floor(p/11.) * red
@@ -118,7 +119,7 @@
       	  + (1. - s) * pcol;
 
       // Distance to ball position
-      tc = vCoordinate - ball;
+      tc = vCoordinate - ballPosition;
       tc.x *= aspect;
       dd = length(tc);
 
@@ -128,6 +129,19 @@
       // If regions is requested, just show those
       col = regions * tcol + (1. - regions) * col;
       
+      gl_FragColor = col;
+  }
+    </script>
+<script id="shader-default-fs" type="x-shader/x-fragment">
+  //The interpolated coordinate for this fragment
+  varying highp vec2 vCoordinate;
+
+  uniform sampler2D texture; // image of pitch for background
+
+  void main()
+  {
+      // texture colour
+      lowp vec4 col = texture2D(texture, vCoordinate);
       gl_FragColor = col;
   }
     </script>
@@ -162,7 +176,7 @@
       <code>&lt;canvas&gt;</code> element.
     </canvas>
     <img id="regions">
-    <canvas id="regionCanvas" width="1024" height="1024">
+    <canvas id="regionCanvas" width="1" height="1">
       Your browser doesn't appear to support the 
       <code>&lt;canvas&gt;</code> element.
     </canvas>
@@ -174,13 +188,16 @@
 	  <th colspan="2">Football Configuration</th>
 	</tr>
 	<tr>
-	  <td>Team A</td>
-	  <td id="teamA" class="rightalign"><input type="checkbox" id="tmA" form="vform"></td>
+	  <td>Team A (blue)</td>
+	  <td id="teamA" class="rightalign"><input type="checkbox"
+						   id="tmA" form="vform"></td>
+	  <td id="teamApc" class="percentage"></td>
 	</tr>
 	<tr>
-	  <td>Team B</td>
+	  <td>Team B (red)</td>
 	  <td id="teamB" class="rightalign"><input type="checkbox"
 	  id="tmB" form="vform" checked="checked"></td>
+	  <td id="teamBpc" class="percentage"></td>
 	</tr>
 	<!--
 	<tr>

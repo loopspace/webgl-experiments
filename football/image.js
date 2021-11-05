@@ -1,21 +1,45 @@
-function Image (gl,caller) {
+function Image (gl,shader) {
     this.gl = gl;
-    this.caller = caller;
-    this.image = caller.texture;
+    this.shader = shader;
     this.coordinates = new Float32Array([
 	1.0, 1.0,
 	0.0, 1.0,
 	1.0, 0.0,
 	0.0, 0.0
     ]);
+    this.vertices = new Float32Array([
+	1.0,  1.0,  0.0, // top right on screen
+	-1.0, 1.0,  0.0, // top left on screen
+	1.0,  -1.0, 0.0, // bottom right on screen
+	-1.0, -1.0, 0.0  // bottom left on screen
+    ]);
+    this.buffers = {};
+}
+
+Image.prototype.defineBuffer = function(label,type) {
+    this.buffers[label] = {
+	type: type,
+	value: 0
+    };
+}
+
+Image.prototype.setBuffer = function(label,value) {
+    this.buffers[label].value = value;
+}
+
+Image.prototype.initialise = function() {
     this.initShaders();
     this.initBuffers();
 }
 
+Image.prototype.setTexture = function(texture) {
+    this.image = texture;
+}
+
 Image.prototype.initShaders = function() {
     var gl = this.gl;
-    var fragmentShader = getShader(gl,'shader-fs');
-    var vertexShader = getShader(gl, 'shader-vs');
+    var fragmentShader = getShader(gl,this.shader.fragment);
+    var vertexShader = getShader(gl, this.shader.vertex);
   
     // Create the shader program
   
@@ -48,12 +72,6 @@ Image.prototype.initShaders = function() {
 
 Image.prototype.initBuffers = function() {
     var gl = this.gl;
-    this.vertices = new Float32Array([
-	1.0,  1.0,  0.0, // top right on screen
-	-1.0, 1.0,  0.0, // top left on screen
-	1.0,  -1.0, 0.0, // bottom right on screen
-	-1.0, -1.0, 0.0  // bottom left on screen
-    ]);
 
     gl.useProgram(this.shaderProgram);
     
@@ -64,12 +82,8 @@ Image.prototype.initBuffers = function() {
 
     this.vertexCoordinateAttribute = gl.getAttribLocation(this.shaderProgram, 'aVertexCoordinate');
 
-    this.uniforms = [];
-    var buffers = this.caller.buffers;
-    for (var i = 0; i < buffers.length; i++) {
-	this.uniforms.push(
-	    gl.getUniformLocation(this.shaderProgram,buffers[i][0])
-	)
+    for (var label in this.buffers) {
+	this.buffers[label].uniform = gl.getUniformLocation(this.shaderProgram,label)
     }
 }
 
@@ -84,12 +98,10 @@ Image.prototype.doBindings = function() {
     gl.vertexAttribPointer(this.vertexCoordinateAttribute, 2, gl.FLOAT, false, 0, 0);
     gl.bufferData(gl.ARRAY_BUFFER, this.coordinates, gl.DYNAMIC_DRAW);
 
-    var buffers = this.caller.buffers;
-    
-    for (var i = 0; i < buffers.length; i++) {
-	gl['uniform' + buffers[i][1] ](
-	    this.uniforms[i],
-	    this.caller[buffers[i][2]]
+    for (var label in this.buffers) {
+	gl['uniform' + this.buffers[label].type ](
+	    this.buffers[label].uniform,
+	    this.buffers[label].value
 	);
     }
 

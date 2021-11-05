@@ -1,6 +1,6 @@
 
 // Voronoi class
-function Voronoi(gls) {
+function Voronoi(gls,texture) {
     this.points = new Float32Array([
 	0.9,0.5,
 	0.7,0.3,
@@ -35,52 +35,73 @@ function Voronoi(gls) {
     this.teams = 1;
     this.ballPosition = new Float32Array([.5,.5]);
     this.ballPlayer = 0;
-    this.setBallPlayer();
-    this.weights = 0;
-    this.delays = 0;
-    this.extents = 0;
-    this.linear = 1;
-    this.regions = 0;
-    this.texture = document.getElementById('pitch');
-    this.aspect = this.texture.width / this.texture.height;
-    this.images = [];
+    this.texture = texture;
 
-    this.buffers = [
-	['pts', '2fv', 'points'],
-	['params', '3fv', 'params'],
-	['tms', '1f', 'teams'],
-	['regions', '1f', 'regions'],
-	['bplyr', '1f', 'ballPlayer'],
-	['ball', '2fv', 'ballPosition'],
-	['wgts', '1f', 'weights'],
-	['dlys', '1f', 'delays'],
-	['exts', '1f', 'extents'],
-	['lin', '1f', 'linear'],
-	['aspect', '1f', 'aspect'],
+    var buffers = [
+	['points', '2fv'],
+	['params', '3fv'],
+	['teams', '1f'],
+	['regions', '1f'],
+	['ballPlayer', '1f'],
+	['ballPosition', '2fv'],
+	['weights', '1f'],
+	['delays', '1f'],
+	['extents', '1f'],
+	['linear', '1f'],
+	['aspect', '1f']
     ];
-    
-    for (var i = 0; i < gls.length; i++) {
-	this.images.push(
-	    new Image(
-		gls[i],
-		this
-	    )
-	);
+
+    this.pitch = new Image(gls[0], {
+		fragment: 'shader-fs',
+		vertex: 'shader-vs'
+    });
+    this.regions = new Image(gls[1], {
+		fragment: 'shader-fs',
+		vertex: 'shader-vs'
+    });
+
+    for (var i = 0; i < buffers.length; i++) {
+	this.pitch.defineBuffer(...buffers[i]);
+	this.regions.defineBuffer(...buffers[i]);
     }
+    this.regions.setBuffer('regions', 1);
+
+    var defaults = {
+	teams: 1,
+	linear: 1,
+	aspect: this.texture.width / this.texture.height,
+	points: this.points,
+	params: this.params,
+	ballPosition: this.ballPosition,
+    };
+
+    for (var label in defaults) {
+	this.pitch.setBuffer(label, defaults[label]);
+	this.regions.setBuffer(label, defaults[label]);
+    }
+    
+    this.setBallPlayer();
+
+    this.pitch.setTexture(texture);
+    this.regions.setTexture(texture);
+    
+    this.pitch.initialise();
+    this.regions.initialise();
 }
 
-Voronoi.prototype.draw = function(i) {
-    if (i == 0) {
-	this.regions = 0;
-    } else {
-	this.regions = 1;
-    }
-    this.images[i].draw();
+Voronoi.prototype.drawPitch = function() {
+    this.pitch.draw();
     this.mvpMatrix = perspectiveMatrix.x(currentMatrix());
+}
+
+Voronoi.prototype.drawRegions = function() {
+    this.regions.draw();
 }
 
 Voronoi.prototype.setTeams = function(b) {
     this.teams = b;
+    this.pitch.setBuffer('teams',b);
+    this.regions.setBuffer('teams',b);
     this.setBallPlayer();
 }
 
@@ -90,6 +111,8 @@ Voronoi.prototype.setLinear = function(b) {
     } else {
 	this.linear = 0;
     }
+    this.pitch.setBuffer('teams',this.linear);
+    this.regions.setBuffer('teams',this.linear);
 }
 
 Voronoi.prototype.setBallPlayer = function() {
@@ -119,6 +142,8 @@ Voronoi.prototype.setBallPlayer = function() {
 	}
     }
     this.ballPlayer = p;
+    this.pitch.setBuffer('ballPlayer', p);
+    this.pitch.setBuffer('ballPosition', this.ballPosition);
 }
 
 Voronoi.prototype.setParams = function(a,b,c,d,e,f) {
@@ -361,15 +386,20 @@ function convertPoint(e,m) {
 // This needs to have a simple shader, not the voronoi one
 
 function Average(gl) {
-    this.texture = document.getElementById('regions');
-    this.buffers = [];
-    this.image = new Image(gl,this);
+    this.image = new Image(gl, {
+	fragment: 'shader-default-fs',
+	vertex: 'shader-vs'
+    });
+
     this.gl = gl;
+    this.image.initialise();
 }
 
+Average.prototype.setTexture = function(texture) {
+    this.image.setTexture(texture);
+}
 
 Average.prototype.draw = function() {
     this.image.draw();
-    this.gl.generateMipmap(gl.TEXTURE_2D);
 }
 

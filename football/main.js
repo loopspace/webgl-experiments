@@ -103,10 +103,9 @@ function start() {
 	return;
     }
 
-    voronoi = new Voronoi([gl,imggl]);
+    voronoi = new Voronoi([gl,imggl],pitch);
     average = new Average(reggl);
 
-    drawScene();
     canvas.addEventListener('wheel',doWheel);
     canvas.addEventListener('mousedown',doMouseDown);
     canvas.addEventListener('mousemove',doMouseMove);
@@ -127,6 +126,7 @@ function start() {
     chkbx.checked = queryBoolean("teamB",true);
 
     setFootballTeams();
+    drawScene();
     /*
     setVoronoiDistanceAux(chkbx);
 
@@ -278,6 +278,18 @@ function setFootballTeams() {
 	chkbxA.checked = true;
     }
 
+    var pcs = document.getElementsByClassName('percentage');
+    var show;
+    if (teams == 3) {
+	show = 'table-cell';
+    } else {
+	show = 'none';
+    }
+
+    for (var i = 0; i < pcs.length; i++) {
+	pcs[i].style.display = show;
+    }
+    
     voronoi.setTeams(teams);
     drawScene();
 }
@@ -394,10 +406,9 @@ function drawScene() {
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
     mvScale([width/2,height/2,1]);
-    voronoi.draw(0);
+    voronoi.drawPitch();
     popMatrix();
 
-    
     imggl.clear(imggl.COLOR_BUFFER_BIT | imggl.DEPTH_BUFFER_BIT);
     clearMatrices();
 
@@ -406,7 +417,7 @@ function drawScene() {
     pushMatrix();
     mvTranslate([width/2,height/2,0]);
     mvScale([width/2,height/2,1]);
-    voronoi.draw(1);
+    voronoi.drawRegions();
     popMatrix();
 
     setImage();
@@ -419,6 +430,7 @@ function setImage() {
         prev.src = window.URL.createObjectURL(b);
         prev.addEventListener('load',function() {
             window.URL.revokeObjectURL(b);
+	    average.setTexture(prev);
 	    drawAverage();
         }, {once: true});
     });
@@ -436,25 +448,40 @@ function drawAverage() {
     average.draw();
     popMatrix();
 
-    var w = reggl.drawingBufferWidth;
-    var h = reggl.drawingBufferHeight;
+//    var w = reggl.drawingBufferWidth;
+//    var h = reggl.drawingBufferHeight;
 
-    w = Math.floor(w/2);
-    h = Math.floor(h/2);
+//    w = Math.floor(w/2);
+//    h = Math.floor(h/2);
 
     var pixels = new Uint8Array(
 	4
     );
     reggl.readPixels(
-	w,
-	h,
+	0,
+	0,
 	1,
 	1,
 	reggl.RGBA,
 	reggl.UNSIGNED_BYTE,
 	pixels
     );
-    console.log(pixels);
+
+    var a = pixels[2];
+    var b = pixels[0];
+
+    var pA = Math.round(a/(a + b)*100);
+    var pB = 100 - pA;
+
+    var tdA = document.getElementById('teamApc');
+    var txt = document.createTextNode(pA + "%");
+    tdA.innerHTML = '';
+    tdA.appendChild(txt);
+    var tdB = document.getElementById('teamBpc');
+    txt = document.createTextNode(pB + "%");
+    tdB.innerHTML = '';
+    tdB.appendChild(txt);
+
 }
 
 function multMatrix(m) {
