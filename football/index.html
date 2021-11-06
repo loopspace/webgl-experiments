@@ -30,15 +30,15 @@
 
   void main()
   {
-      lowp float st = 11. * (1. - mod(teams,2.));
+      lowp float st = 11. * (1. - mod(teams,2.)) - 1.;
       lowp float ed = 11. * (1. + floor(teams/2.));
-      lowp float d = 2.; // shortest actual distance
+      lowp float d = 4.; // shortest actual distance
       lowp float dd; // actual distance to current point
       lowp float a = 2.; // alternative metric distance
       lowp float ad; // alternative metric distance 
       lowp float ld; // variations of distance
-      lowp float p = 0.; // index of nearest player
-      lowp vec2 pt = points[0]; // location of nearest player
+      lowp float p = -1.; // index of nearest player
+      lowp vec2 pt = vec2(-1.,-1.); // location of nearest player
       lowp float s;
       lowp float t;
       lowp float w = 0.; // for locating boundary between regions
@@ -123,7 +123,7 @@
       tc.x *= aspect;
       dd = length(tc);
 
-      s = step(dd,0.01);
+      s = step(dd,0.013);
       col = s * vec4(1.) + (1. - s) * col;
 
       // If regions is requested, just show those
