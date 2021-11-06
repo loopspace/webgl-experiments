@@ -18,6 +18,7 @@
   uniform sampler2D texture; // image of pitch for background
   uniform lowp vec2 points[22]; // positions of players
   uniform lowp vec3 params[22]; // variations of distance
+  uniform lowp float highlights[22]; // highlight players
   uniform lowp float weights;
   uniform lowp float delays;
   uniform lowp float extents;
@@ -26,6 +27,7 @@
   uniform lowp float teams; // which teams to show
   uniform lowp vec2 ballPosition; // position of ball
   uniform lowp float ballPlayer; // index of player closest to ball
+  uniform lowp float highlightBall;
   uniform lowp float regions; // colour all regions or just wireframe
 
   void main()
@@ -39,6 +41,7 @@
       lowp float ld; // variations of distance
       lowp float p = -1.; // index of nearest player
       lowp vec2 pt = vec2(-1.,-1.); // location of nearest player
+      lowp float ht = 0.;  // is nearest player highlighted?
       lowp float s;
       lowp float t;
       lowp float w = 0.; // for locating boundary between regions
@@ -51,6 +54,7 @@
       // highlight colour
       lowp vec4 red = vec4(1.,0.,0.,1.);
       lowp vec4 blue = vec4(0.,0.,1.,1.);
+      lowp vec4 yellow = vec4(1.,1.,0.,1.);
     
       for (int i = 0; i < 22; i++) {
 	  // Adjust vector to i-th point to take aspect ratio into account
@@ -93,6 +97,8 @@
           p = (1.-s)*(float (i)) + s*p;
 	  // adjust the location of the current point
 	  pt = (1.-s)*points[i] + s*pt;
+	  // is nearest player highlighted?
+	  ht = (1.-s)*highlights[i] + s*ht;
 	  // shortest adjusted distance
           a = s*a + (1.-s)*ad;
 	  // shortest actual distance
@@ -111,17 +117,26 @@
       // set the team colour
       tcol = ( red * floor(p/11.)
 	      + blue * (1. - floor(p/11.)) ); 
+
+      // highlight selected players
+      s = (1. - smoothstep(.01,.03,d)) * ht;
+
+      col = yellow * s + (1. - s) * pcol;
       
       // highlight the player locations or boundaries
       s = max( step(d,.01) , w);
       
       col =  tcol * s
-      	  + (1. - s) * pcol;
+      	  + (1. - s) * col;
 
       // Distance to ball position
       tc = vCoordinate - ballPosition;
       tc.x *= aspect;
       dd = length(tc);
+
+      // highlight ball
+      s = (1. - smoothstep(.013,.03,dd)) * highlightBall;
+      col = yellow * s + (1. - s) * col;
 
       s = step(dd,0.013);
       col = s * vec4(1.) + (1. - s) * col;

@@ -25,6 +25,9 @@ function Voronoi(gls,texture) {
 	0.6,0.4,
 	0.73,0.5,
     ]);
+    this.highlights = new Float32Array([
+	0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0
+    ]);
     var params = [];
     for (var i = 0; i < 16; i++) {
 	params.push(1+Math.random())
@@ -48,7 +51,9 @@ function Voronoi(gls,texture) {
 	['delays', '1f'],
 	['extents', '1f'],
 	['linear', '1f'],
-	['aspect', '1f']
+	['aspect', '1f'],
+	['highlights', '1fv'],
+	['highlightBall', '1f']
     ];
 
     this.pitch = new Image(gls[0], {
@@ -73,6 +78,7 @@ function Voronoi(gls,texture) {
 	points: this.points,
 	params: this.params,
 	ballPosition: this.ballPosition,
+	highlights: this.highlights,
     };
 
     for (var label in defaults) {
@@ -242,11 +248,13 @@ Voronoi.prototype.doMouseDown = function(e) {
 	    this.mousept.x - this.ballPosition[0],
 	    this.mousept.y - this.ballPosition[1]
 	];
+	this.pitch.setBuffer('highlightBall', 1);
     } else {
 	this.touchOffset = [
 	    this.mousept.x - this.points[p],
 	    this.mousept.y - this.points[p+1]
 	];
+	this.highlights[p/2] = 1;
     }
 }
 
@@ -270,6 +278,8 @@ Voronoi.prototype.doMouseUp = function(e) {
     if (e.button != 0)
 	return;
     this.mouseIsMoving = false;
+    this.highlights[this.touchpt/2] = 0;
+    this.pitch.setBuffer('highlightBall', 0);
 }
 
 /*
@@ -307,11 +317,13 @@ Voronoi.prototype.doTouchStart = function(e) {
 	    this.mousept.x - this.ballPosition[0],
 	    this.mousept.y - this.ballPosition[1]
 	];
+	this.pitch.setBuffer('highlightBall', 1);
     } else {
 	this.touchOffset = [
 	    this.mousept.x - this.points[p],
 	    this.mousept.y - this.points[p+1]
 	];
+	this.highlights[p/2] = 1;
     }
 }
 
@@ -331,6 +343,7 @@ Voronoi.prototype.doTouchMove = function(e) {
 
 Voronoi.prototype.doTouchEnd = function(e) {
     this.touchIsMoving = false;
+    this.pitch.setBuffer('highlightBall', 0);
 }
 
 var corners = [
