@@ -343,6 +343,7 @@ Voronoi.prototype.doTouchMove = function(e) {
 
 Voronoi.prototype.doTouchEnd = function(e) {
     this.touchIsMoving = false;
+    this.highlights[this.touchpt/2] = 0;
     this.pitch.setBuffer('highlightBall', 0);
 }
 
