@@ -200,7 +200,19 @@ Voronoi.prototype.setParameter = function(c) {
     this.parameters = new Float32Array(c);
 }
 
+Voronoi.prototype.resetHighlights = function() {
+    for (var i = 0; i < this.highlights.length; i++) {
+	this.highlights[i] = 0;
+    }
+}
+
+
 Voronoi.prototype.isTouchedBy = function(e) {
+    if (this.inTouch) return false;
+    return this.isOnImage(e);
+}
+
+Voronoi.prototype.isOnImage = function(e) {
     var pt = convertPoint(e,this.mvpMatrix);
     if (pt.x < 1 && pt.x > 0 && pt.y < 1 && pt.y > 0)
 	return true;
@@ -215,13 +227,22 @@ Voronoi.prototype.doWheel = function(e) {
 Voronoi.prototype.doMouseDown = function(e) {
     if (e.button != 0)
 	return;
+    this.processMouseDown(e);
+}
+
+Voronoi.prototype.processMouseDown = function(e) {
+    // mouse down, start of a move or a click
     this.mouseIsMoving = false;
-    this.mousept = convertPoint(e,this.mvpMatrix);
+    // convert touch point to image coordinates 
+    var mousept = convertPoint(e,this.mvpMatrix);
     var x,y,d,dd,p,st,ed;
 
-    d = Math.pow(this.mousept.x - this.ballPosition[0],2) + Math.pow(this.mousept.y - this.ballPosition[1],2);
+    // initialise with the distance to the ball 
+    d = Math.pow(mousept.x - this.ballPosition[0],2) + Math.pow(mousept.y - this.ballPosition[1],2);
+    // index -1 indicates the nearest object is the ball
     p = -1;
-    
+
+    // figure out which teams are in play
     if ( (this.teams & 1) == 1) {
 	st = 0;
     } else {
@@ -233,52 +254,110 @@ Voronoi.prototype.doMouseDown = function(e) {
 	ed = 11;
     }
 
+    // iterate over the active players to see which is closest to the touch point
     for (var i = st; i < ed; i++) {
 	x = this.points[2*i];
 	y = this.points[2*i+1];
-	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
+	dd = Math.pow(mousept.x - x,2) + Math.pow(mousept.y - y,2);
 	if (dd < d) {
 	    d = dd;
 	    p = 2*i;
 	}
     }
-    this.touchpt = p;
+
+    // the index p corresponds to the closest object
+    // it's actually 2i because the position array is flattened
+    this.touchedPlayer = p;
     if (p == -1) {
+	// the ball is the closest object, save the offset from the touch position to the touch point
 	this.touchOffset = [
-	    this.mousept.x - this.ballPosition[0],
-	    this.mousept.y - this.ballPosition[1]
+	    mousept.x - this.ballPosition[0],
+	    mousept.y - this.ballPosition[1]
 	];
+	// highlight the ball
 	this.pitch.setBuffer('highlightBall', 1);
+	// un-highlight all the players
+	this.resetHighlights()
     } else {
-	this.touchOffset = [
-	    this.mousept.x - this.points[p],
-	    this.mousept.y - this.points[p+1]
-	];
-	this.highlights[p/2] = 1;
+	// a player is the closest object, save the initial touch position
+	this.lastTouch = mousept
+	// un-highlight the ball
+	this.pitch.setBuffer('highlightBall', 0);
     }
 }
 
 Voronoi.prototype.doMouseMove = function(e) {
     if (e.buttons != 1)
 	return;
+    this.processMouseMove(e);
+}
+
+Voronoi.prototype.processMouseMove = function(e) {
+    // we're moving
     this.mouseIsMoving = true;
-    
+
+    // convert the touch point into the image coordinates
     var pt = convertPoint(e,this.mvpMatrix);
-    if (this.touchpt == -1) {
+    if (this.touchedPlayer == -1) {
+	// touched object was the ball, update its position
 	this.ballPosition[0] = pt.x - this.touchOffset[0];
 	this.ballPosition[1] = pt.y - this.touchOffset[1];
     } else {
-	this.points[this.touchpt] = pt.x - this.touchOffset[0];
-	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
+	// closest object is a player, make sure it is highlighted
+	this.highlights[this.touchedPlayer/2] = 1;
+
+	// work out the delta of the touch point
+	var dt = {x: pt.x, y: pt.y};
+	dt.x -= this.lastTouch.x;
+	dt.y -= this.lastTouch.y;
+
+	// figure out which players are active
+	var st,ed;
+	if ( (this.teams & 1) == 1) {
+	    st = 0;
+	} else {
+	    st = 11;
+	}
+	if ( (this.teams & 2) == 2) {
+	    ed = 22;
+	} else {
+	    ed = 11;
+	}
+
+	// iterate over the active players
+	for (var i = st; i < ed; i++) {
+	    if (this.highlights[i] == 1) {
+		// if selected, update their position
+		this.points[2*i] += dt.x;
+		this.points[2*i+1] += dt.y;
+	    }
+	}
+	// update the last touch point
+	this.lastTouch = pt;
     }
+    // reset which player is closest to the ball
     this.setBallPlayer();
 }
 
 Voronoi.prototype.doMouseUp = function(e) {
     if (e.button != 0)
 	return;
+    this.processMouseUp(e);
+}
+
+Voronoi.prototype.processMouseUp = function(e) {
+    if (this.mouseIsMoving) {
+	// if the mouse is moving, reset the highlight
+	this.resetHighlights();
+    } else {
+	if (this.touchedPlayer != -1) {
+	    // if the mouse is not moving, this is a click so swap the selection of the touched player
+	    
+	    this.highlights[this.touchedPlayer/2] = 1 - this.highlights[this.touchedPlayer/2];
+	}
+    }
     this.mouseIsMoving = false;
-    this.highlights[this.touchpt/2] = 0;
+    // regardless, de-highlight the ball
     this.pitch.setBuffer('highlightBall', 0);
 }
 
@@ -286,65 +365,15 @@ Voronoi.prototype.doMouseUp = function(e) {
   Needs implementing for touch screens
 */
 Voronoi.prototype.doTouchStart = function(e) {
-    this.touchIsMoving = false;
-    this.mousept = convertPoint(e,this.mvpMatrix);
-
-    var x,y,d,dd,p,st,ed;
-    d = Math.pow(this.mousept.x - this.ballPosition[0],2) + Math.pow(this.mousept.y - this.ballPosition[1],2);
-    p = -1;
-    if ((this.teams & 1) == 1) {
-	st = 0;
-    } else {
-	st = 11;
-    }
-    if ((this.teams & 2) == 2) {
-	ed = 22;
-    } else {
-	ed = 11;
-    }
-    for (var i = st; i < ed; i++) {
-	x = this.points[2*i];
-	y = this.points[2*i+1];
-	dd = Math.pow(this.mousept.x - x,2) + Math.pow(this.mousept.y - y,2);
-	if (dd < d) {
-	    d = dd;
-	    p = 2*i;
-	}
-    }
-    this.touchpt = p;
-    if (p == -1) {
-	this.touchOffset = [
-	    this.mousept.x - this.ballPosition[0],
-	    this.mousept.y - this.ballPosition[1]
-	];
-	this.pitch.setBuffer('highlightBall', 1);
-    } else {
-	this.touchOffset = [
-	    this.mousept.x - this.points[p],
-	    this.mousept.y - this.points[p+1]
-	];
-	this.highlights[p/2] = 1;
-    }
+    this.inTouch = true;
+    return this.processMouseDown(e);
 }
-
 Voronoi.prototype.doTouchMove = function(e) {
-    this.touchIsMoving = true;
-    
-    var pt = convertPoint(e,this.mvpMatrix);
-    if (this.touchpt == -1) {
-	this.ballPosition[0] = pt.x - this.touchOffset[0];
-	this.ballPosition[1] = pt.y - this.touchOffset[1];
-    } else {
-	this.points[this.touchpt] = pt.x - this.touchOffset[0];
-	this.points[this.touchpt+1] = pt.y - this.touchOffset[1];
-    }
-    this.setBallPlayer();
+    return this.processMouseMove(e);
 }
-
 Voronoi.prototype.doTouchEnd = function(e) {
-    this.touchIsMoving = false;
-    this.highlights[this.touchpt/2] = 0;
-    this.pitch.setBuffer('highlightBall', 0);
+    this.inTouch = false;
+    return this.processMouseUp(e);
 }
 
 var corners = [

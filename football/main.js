@@ -8,6 +8,8 @@ var imgsize;
 var aspect;
 var pitchAspect;
 
+var debug = false;
+
 var voronoi;
 var average;
 
@@ -17,8 +19,8 @@ var matrixStack = [];
 // Perspective matrix
 var perspectiveMatrix;
 
-// Current touched object
-var voronoiInTouch;
+// Current mouse object
+var mouseObject;
 
 // Parse query string
 var qs = (function(a) {
@@ -184,7 +186,7 @@ function start() {
     var h = window.innerHeight - 20;
     hdv.style.height = h + 'px';
 
-//    document.getElementById("dl").addEventListener('click', dlCanvas, false);
+    //    document.getElementById("dl").addEventListener('click', dlCanvas, false);
 }
 
 /* From https://stackoverflow.com/a/12796748/315213 */
@@ -508,24 +510,25 @@ function doWheel(e) {
 }
 
 function doMouseDown(e) {
-    voronoiInTouch = null;
-    if (voronoi.isTouchedBy(e)) {
+    mouseObject = null;
+    if (voronoi.isOnImage(e)) {
 	voronoi.doMouseDown(e);
-	voronoiInTouch = true;
+	mouseObject = voronoi;
 	drawScene();
     }
 }
 
 function doMouseMove(e) {
-    if (voronoiInTouch) {
-	voronoi.doMouseMove(e);
+    if (mouseObject) {
+	mouseObject.doMouseMove(e);
 	drawScene();
     }
 }
 
 function doMouseUp(e) {
-    if (voronoiInTouch) {
-	voronoi.doMouseUp(e);
+    if (mouseObject) {
+	mouseObject.doMouseUp(e);
+	mouseObject = null;
 	drawScene();
     }
 }
@@ -533,6 +536,7 @@ function doMouseUp(e) {
 var ongoingTouches = [];
 
 function doTouchStart(e) {
+    setMessage("Touch start");
     e.preventDefault();
     var update = false;
     var touches = e.changedTouches;
@@ -550,6 +554,7 @@ function doTouchStart(e) {
 }
 
 function doTouchMove(e) {
+    setMessage("Touch move");
     e.preventDefault();
     var update = false;
     var touches = e.changedTouches;
@@ -568,6 +573,7 @@ function doTouchMove(e) {
 }
 
 function doTouchEnd(e) {
+    setMessage("Touch end");
     e.preventDefault();
     var update = false;
     var touches = e.changedTouches;
@@ -621,4 +627,14 @@ function ongoingTouchIndexById(idToFind) {
     }
   }
   return -1;    // not found
+}
+
+
+function setMessage(s) {
+    if (debug) {
+	var txt = document.createTextNode(s);
+	var msgelt = document.getElementById("message");
+	msgelt.innerHTML = '';
+	msgelt.appendChild(txt);
+    }
 }
